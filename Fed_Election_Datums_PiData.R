@@ -137,6 +137,12 @@ iatDataframe<-data.frame(Fin=iatData$session_status, dScore=iatData$D_biep.Male_
 #Only use Complete data
 iatDataframe<-iatDataframe[iatDataframe$Fin=='C',]
 
+
+#Dscore becores z-scored
+iatDataframe$dScore<-(iatDataframe$dScore-mean(iatDataframe$dScore, 
+					na.rm=T))/sd(iatDataframe$dScore, na.rm=T)
+
+
 #_____Changing age to a z-score_______#
 iatDataframe$Age<-(iatDataframe$Age-mean(iatDataframe$Age, 
 					na.rm=T))/sd(iatDataframe$Age, na.rm=T)
