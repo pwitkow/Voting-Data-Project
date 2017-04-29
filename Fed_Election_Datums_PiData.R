@@ -224,18 +224,14 @@ iatDataframe$Religiosity<-(iatDataframe$Religiosity-mean(iatDataframe$Religiosit
 #Take out political party if necssary for analysis
 #iatDataframe<-iatDataframe[iatDataframe$PoliScore>0,]
 
-dMean=mean(iatDataframe$dScore, na.rm=T)
-exFMean=mean(iatDataframe$AssoFamily, na.rm=T)
-exCMean=mean(iatDataframe$AssoFamily, na.rm=T)
-
 #Condense all variables by FIPS
 Final<-ddply(iatDataframe, c("FIPS"), summarise, Income=median(Income, na.rm=T),Pop=length(dScore),	     
 			     Age=mean(Age, na.rm=T), EduLevel=mean(eduLevel, na.rm=T),
 			     Sex=(mean(Females, na.rm=T))/((mean(Females, na.rm=T)+ mean(Males, na.rm=T))),
 			     White=mean(White,na.rm=T), Black=mean(Black, na.rm=T), Latin=mean(Latin, na.rm=T),
 				Asian=mean(Asian, na.rm=T), Poli=mean(PoliScore, na.rm=T),
-				AssoFamily=mean(AssoFamily, na.rm=T), AssoFamily_SE=(sd(AssoFamily, na.rm=T)/sqrt(Pop)),
-				AssoCareer=mean(AssoCareer, na.rm=T),AssoCareer_SE=(sd(AssoCareer, na.rm=T)/sqrt(Pop)),
+				AssoFamily_SE=(sd(AssoFamily, na.rm=T)),AssoFamily=mean(AssoFamily, na.rm=T),
+				AssoCareer_SE=(sd(AssoCareer, na.rm=T)), AssoCareer=mean(AssoCareer, na.rm=T),
 				Count=length(FIPS),DScore=mean(dScore, na.rm=T),
 			      DScore_SE=(sd(dScore, na.rm=T)/sqrt(Pop)) ) 
 
@@ -246,15 +242,15 @@ Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
 
 #apply replacements
 Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
-Final$Career_SE[Final$Pop==1]<-Career_SE_Rep
-Final$Family_SE[Final$Pop==1]<-Family_SE_Rep
+Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
+Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
 
 #weights for Dscore and Exp_Bias
 Final$DScore_wieght<-(1/(Final$DScore_SE^2)) 
 Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
 Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
 
-Final$FIP_weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
+Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
 
 #____Percentage of Latin z-Score____
 Final$Latin<-(Final$Latin-mean(Final$Latin, 
@@ -312,6 +308,7 @@ MainData$AssoFamily<-Final$AssoFamily[mM]
 MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
+MainData$Wieght<-Final$weight[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
@@ -323,6 +320,9 @@ MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoff and do statistics stuff
 daters<-MainData#[MainData$Count>=20,]
 
+
+
+
 #get rid of NA rows 
 daters<-daters[rowSums(is.na(daters)) <= 0,]
 
@@ -331,6 +331,11 @@ corTests<-corTests[complete.cases(corTests),]
 #corTest needs to be a matrix
 corrs<-rcorr(as.matrix(corTests))$r
 ps<-rcorr(as.matrix(corTests))$P
+
+
+
+
+
 
 MainModel<-lm(Prop.H~DScore
 			+Age  #Avg age of county
