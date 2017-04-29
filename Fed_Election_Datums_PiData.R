@@ -307,34 +307,36 @@ MainData$Poli<-Final$Poli[mM]
 MainData$AssoFamily<-Final$AssoFamily[mM]
 MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
-MainData$Count<-Final$Count[mM]
+MainData$Count<-Final$Count[mM]1
 MainData$Wieght<-Final$weight[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
 rM<-match(MainData$FIPS, rel_data$FIPS)
-MainData$Religous<-rel_data$TOTRATEZ[rM]
+MainData$Religous<-rel_data$TOTRATEZ[rM]6re
 
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoff and do statistics stuff
 daters<-MainData#[MainData$Count>=20,]
 
-
-
-
 #get rid of NA rows 
 daters<-daters[rowSums(is.na(daters)) <= 0,]
+
+#is there a faster way to do this using matrix multiplication?
+daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
+			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
+			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
+			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
+			Religous=Religous*Wieght, Wieght=Wieght)
+
+
 
 corTests<-daters[,c(21,20,11,12,14,18,16,17,15,13,10,19,24)]
 corTests<-corTests[complete.cases(corTests),]
 #corTest needs to be a matrix
 corrs<-rcorr(as.matrix(corTests))$r
 ps<-rcorr(as.matrix(corTests))$P
-
-
-
-
 
 
 MainModel<-lm(Prop.H~DScore
@@ -353,11 +355,6 @@ MainModel<-lm(Prop.H~DScore
 			data=daters, na.action=na.omit)
 
 summary(MainModel, correlation=F)
-
-#add cooks distance numbers to the data frame 
-daters$cooksDis<-cooks.distance(MainModel)
-
-daters<-daters[daters$cooksDis<=0.002137,] #N & K values in excel sheet
 
 daters$Bins<-cut(daters$Count, c(20,50,100,500,10500))
 
