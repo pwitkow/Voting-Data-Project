@@ -136,6 +136,12 @@ iatDataframe<-data.frame(Fin=iatData$session_status, dScore=iatData$D_biep.Male_
 #Only use Complete data
 iatDataframe<-iatDataframe[iatDataframe$Fin=='C',]
 
+
+#Dscore becores z-scored
+iatDataframe$dScore<-(iatDataframe$dScore-mean(iatDataframe$dScore, 
+					na.rm=T))/sd(iatDataframe$dScore, na.rm=T)
+
+
 #_____Changing age to a z-score_______#
 iatDataframe$Age<-(iatDataframe$Age-mean(iatDataframe$Age, 
 					na.rm=T))/sd(iatDataframe$Age, na.rm=T)
@@ -217,22 +223,33 @@ iatDataframe$Religiosity<-(iatDataframe$Religiosity-mean(iatDataframe$Religiosit
 #Take out political party if necssary for analysis
 #iatDataframe<-iatDataframe[iatDataframe$PoliScore>0,]
 
-
-
 #Condense all variables by FIPS
-Final<-ddply(iatDataframe, c("FIPS"), summarise, Income=median(Income, na.rm=T),
-							     DScore=mean(dScore, na.rm=T),
+Final<-ddply(iatDataframe, c("FIPS"), summarise, Income=median(Income, na.rm=T),Pop=length(dScore),	     
 			     Age=mean(Age, na.rm=T), EduLevel=mean(eduLevel, na.rm=T),
 			     Sex=(mean(Females, na.rm=T))/((mean(Females, na.rm=T)+ mean(Males, na.rm=T))),
 			     White=mean(White,na.rm=T), Black=mean(Black, na.rm=T), Latin=mean(Latin, na.rm=T),
 				Asian=mean(Asian, na.rm=T), Poli=mean(PoliScore, na.rm=T),
-				AssoFamily=mean(AssoFamily, na.rm=T),AssoCareer=mean(AssoCareer, na.rm=T),
-				Count=length(FIPS), Pop=length(dScore))
+				AssoFamily_SE=(sd(AssoFamily, na.rm=T)),AssoFamily=mean(AssoFamily, na.rm=T),
+				AssoCareer_SE=(sd(AssoCareer, na.rm=T)), AssoCareer=mean(AssoCareer, na.rm=T),
+				Count=length(FIPS),DScore=mean(dScore, na.rm=T),
+			      DScore_SE=(sd(dScore, na.rm=T)/sqrt(Pop)) ) 
 
-#____Percentage of Latin z-Score____#
-Final$Latin<-(Final$Latin-mean(Final$Latin, 
-					na.rm=T))/sd(Final$Latin, na.rm=T)
-#__________________________________________#
+#replacements for those with N==1
+DScore_SE_Rep=mean(Final$DScore_SE[Final$Pop==2], na.rm=T)
+Career_SE_Rep=mean(Final$AssoCareer_SE[Final$Pop==2], na.rm=T)
+Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
+
+#apply replacements
+Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
+Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
+Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+
+#weights for Dscore and Exp_Bias
+Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
+Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
+Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
+
+Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
 
 #____ Religion_________________________________________--#
 rel_data<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\rel_data.csv", head=T)
@@ -305,6 +322,7 @@ MainData$AssoFamily<-Final$AssoFamily[mM]
 MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
+MainData$Wieght<-Final$weight[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
@@ -318,10 +336,16 @@ MainData$numDays<-days$avgNumDays[mDS]
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoff and do statistics stuff
-daters<-MainData[MainData$Count>=20,]
+daters<-MainData#[MainData$Count>=20,]
 
 #get rid of NA rows 
 daters<-daters[rowSums(is.na(daters)) <= 0,]
+
+daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
+			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
+			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
+			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
+			Religous=Religous*Wieght, Wieght=Wieght)
 
 #states with primaries after april 19th__________________________________________________________
 ap19dem<-c('WY','NY','CT','DE','MD','PA','RI','IN',

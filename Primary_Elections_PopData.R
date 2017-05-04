@@ -132,29 +132,38 @@ votData<-votData[!(votData$State=="ME"),]
 votData<-rbind(votData, maine_data)
 
 #IAT Data________________________________________________________________________________________________________________
-
 iatData<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Project Implicit Data\\Gender-Career IAT.public.2005-2015.csv", head=T)
 
 #load data into data-frame
 iatDataframe<-data.frame(Fin=iatData$session_status, dScore=iatData$D_biep.Male_Career_all,
-			year=iatData$year, County=iatData$CountyNo, State=iatData$STATE, 
-			AssoCareer=iatData$assocareer, AssoFamily=iatData$assofamily, ID=iatData$session_id)
-
+	Age=iatData$age, year=iatData$year, eduLevel=iatData$edu_14, ethnic=iatData$ethnic, sex=iatData$sex,
+	County=iatData$CountyNo, State=iatData$STATE, Income=iatData$anninc, PoliSix=iatData$politicalid_6, 
+	PoliSev=iatData$politicalid_7, AssoCareer=iatData$assocareer, AssoFamily=iatData$assofamily, 
+	ID=iatData$session_id, Religiosity=iatData$religionid)
 
 #Only use Complete data
 iatDataframe<-iatDataframe[iatDataframe$Fin=='C',]
+
+
+#Dscore becores z-scored
+iatDataframe$dScore<-(iatDataframe$dScore-mean(iatDataframe$dScore, 
+					na.rm=T))/sd(iatDataframe$dScore, na.rm=T)
+
 
 #merge state abbv. with county number for FIPS 
 iatDataframe$FIPS<-	
 	gsub(" ", "",(do.call(paste, as.data.frame(iatDataframe[,c("State","County")], stringsAsFactors=FALSE))), fixed=T)
 
 
-#Make all alsaka and maine respondents from the same voting district
+#Make all alsaka respondents from the same voting district
 iatDataframe[iatDataframe$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
-iatDataframe[iatDataframe$State=="ME",]$FIPS<-matchCodes[matchCodes$State=='ME',]$FIPS[1]
 
 
-#get all the fips that need to be replace with the right fips for minneosta
+#Reform minnosota because its coutnies != voting districts
+#In this authors opinion, it should be declared a wildlife
+#sancutary for gerry-manders!
+
+	#get all the fips that need to be replace
 mNFips1<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='1st District',]$FIPS
 mNFips2<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='2nd District',]$FIPS
 mNFips6<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='6th District',]$FIPS
@@ -170,12 +179,32 @@ iatDataframe[iatDataframe$State=='MN',]$FIPS<-
 	iatDataframe[iatDataframe$State=='MN',]$FIPS)))))
 
 
+
+
+
+
 #Transfrom explicit measures into z-scores
 iatDataframe$AssoCareer<-(iatDataframe$AssoCareer-mean(iatDataframe$AssoCareer, 
 					na.rm=T))/sd(iatDataframe$AssoCareer, na.rm=T) 
 iatDataframe$AssoFamily<-(iatDataframe$AssoFamily-mean(iatDataframe$AssoFamily, 
 					na.rm=T))/sd(iatDataframe$AssoFamily, na.rm=T)
 
+#replacements for those with N==1
+DScore_SE_Rep=mean(Final$DScore_SE[Final$Pop==2], na.rm=T)
+Career_SE_Rep=mean(Final$AssoCareer_SE[Final$Pop==2], na.rm=T)
+Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
+
+#apply replacements
+Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
+Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
+Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+
+#weights for Dscore and Exp_Bias
+Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
+Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
+Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
+
+Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
 
 
 #Condense all variables by FIPS

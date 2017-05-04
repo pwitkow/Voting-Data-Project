@@ -246,7 +246,7 @@ Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
 Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
 
 #weights for Dscore and Exp_Bias
-Final$DScore_wieght<-(1/(Final$DScore_SE^2)) 
+Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
 Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
 Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
 
@@ -307,13 +307,13 @@ MainData$Poli<-Final$Poli[mM]
 MainData$AssoFamily<-Final$AssoFamily[mM]
 MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
-MainData$Count<-Final$Count[mM]1
+MainData$Count<-Final$Count[mM]
 MainData$Wieght<-Final$weight[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
 rM<-match(MainData$FIPS, rel_data$FIPS)
-MainData$Religous<-rel_data$TOTRATEZ[rM]6re
+MainData$Religous<-rel_data$TOTRATEZ[rM]
 
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
