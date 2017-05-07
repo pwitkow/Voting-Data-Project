@@ -131,9 +131,12 @@ iatDataframe<-data.frame(Fin=iatData$session_status, dScore=iatData$D_biep.Male_
 			year=iatData$year, County=iatData$CountyNo, State=iatData$STATE, 
 			AssoCareer=iatData$assocareer, AssoFamily=iatData$assofamily)
 
-
 #Only use Complete data
 iatDataframe<-iatDataframe[iatDataframe$Fin=='C',]
+
+#Dscore becores z-scored
+iatDataframe$dScore<-(iatDataframe$dScore-mean(iatDataframe$dScore, 
+					na.rm=T))/sd(iatDataframe$dScore, na.rm=T)
 
 #merge state abbv. with county number for FIPS 
 iatDataframe$FIPS<-	
@@ -172,7 +175,28 @@ iatDataframe$AssoFamily<-(iatDataframe$AssoFamily-mean(iatDataframe$AssoFamily,
 #Condense all variables by FIPS
 Final<-ddply(iatDataframe, c("FIPS"), summarise, DScore=mean(dScore, na.rm=T),
 					Count=length(FIPS), Pop=length(dScore), State=State[1],
-					AssoFamily=mean(AssoFamily, na.rm=T),AssoCareer=mean(AssoCareer, na.rm=T))
+				AssoFamily_SE=(sd(AssoFamily, na.rm=T)),AssoFamily=mean(AssoFamily, na.rm=T),
+				AssoCareer_SE=(sd(AssoCareer, na.rm=T)), AssoCareer=mean(AssoCareer, na.rm=T),
+				Count=length(FIPS),DScore=mean(dScore, na.rm=T),
+			      DScore_SE=(sd(dScore, na.rm=T)/sqrt(Pop)) )
+
+#replacements for those with N==1
+DScore_SE_Rep=mean(Final$DScore_SE[Final$Pop==2], na.rm=T)
+Career_SE_Rep=mean(Final$AssoCareer_SE[Final$Pop==2], na.rm=T)
+Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
+
+#apply replacements
+Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
+Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
+Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+
+#weights for Dscore and Exp_Bias
+Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
+Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
+Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
+
+Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
+
 
 #______________________________________________________________________________________________________________
 
@@ -261,6 +285,8 @@ MainData$AssoFamily<-Final$AssoFamily[mM]
 MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
+MainData$Wieght<-Final$weight[mM]
+
 #demographic data
 MainData$White<-Pop_data$White[dM]/Pop_data$Total[dM]
 MainData$Black<-Pop_data$Black[dM]/Pop_data$Total[dM]
@@ -282,10 +308,17 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoffs in data for model
-daters<-MainData#[MainData$Count>=20,]
+daters<-MainData   #[MainData$Count>=20,]
 
 #get rid of NA rows 
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
+
+#is there a faster way to do this using matrix multiplication?
+daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
+			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
+			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
+			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
+			Religous=Religous*Wieght, Wieght=Wieght)
 
 
 corTests<-daters[,c(12,11,10,21,22,18,16,17,15,20,19,23,24)]

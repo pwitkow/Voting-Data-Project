@@ -253,8 +253,8 @@ Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
 Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
 
 #____Percentage of Latin z-Score____
-Final$Latin<-(Final$Latin-mean(Final$Latin, 
-					na.rm=T))/sd(Final$Latin, na.rm=T)
+#Final$Latin<-(Final$Latin-mean(Final$Latin, 
+#					na.rm=T))/sd(Final$Latin, na.rm=T)
 #__________________________________________#
 
 #____ Religion_________________________________________--#
