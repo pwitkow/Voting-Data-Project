@@ -242,7 +242,7 @@ Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
 #apply replacements
 Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
 Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
-Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+Final$AssoFamily_SE[Final$Pop==1 | Final$AssoFamily_SE==0]<-Family_SE_Rep
 
 #weights for Dscore and Exp_Bias
 Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
@@ -281,8 +281,9 @@ days$State<-as.character(days$State)
 days$State<-unlist(lapply(days$State,simpleCap))
 days$State<-state.abb[match(days$State, state.name)]
 
-#average the dates
-days$avgNumDays<-(days$DemNumDays+days$RepNumDays)/2
+#average the dates when republicans and dems 
+days$avgNumDays<-ifelse((days$DemNumDays >0 & days$RepNumDays >0), 
+				 (days$DemNumDays+days$RepNumDays)/2, ifelse(days$DemNumDays<0,days$RepNumDays,days$DemNumDays))  
 
 
 
@@ -336,42 +337,25 @@ MainData$numDays<-days$avgNumDays[mDS]
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoff and do statistics stuff
-daters<-MainData#[MainData$Count>=20,]
+daters<-MainData
 
 #get rid of NA rows 
 daters<-daters[rowSums(is.na(daters)) <= 0,]
+
+#takes out all data with an AVERAGE date after may 1st
+daters<-daters[daters$numDays<90,]
 
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght)
+			Religous=Religous*Wieght, Wieght=Wieght)#,numDays=numDays)
 
-#states with primaries after april 19th__________________________________________________________
-ap19dem<-c('WY','NY','CT','DE','MD','PA','RI','IN',
-	'WV','KY','OR','CA','MT','NJ','NM','ND','SD')
-#states with republican primaries after april 19th but not Dems
-ap19<-c(ap19dem, 'WA', 'NE')
 
-daters<-daters[!(daters$State %in% ap19), ]
-
-#Ex.C = explicit career associations. Ex.F = explicit family associations. 
-#Im.G = implicit gender bias. Ed.L = Education level. Inc = income. 
-#%Fe = percent female population. %As = percent Asian population. 
-#%Bl = percent Black population. %LA = percent Latino population. 
-#%Wh = percent White population. Pol = political orientation, Rel = religiosity.
-#predictor variable Correlations
-
-corTests<-daters[,c(19,18,9,10,11,8,12,16,14,15,13,17,22,23)]
-#corTests<-Bdaters[,c(23,22,13,14,15,12,16,20,18,19,17,21,26,27)]
-corTests<-corTests[complete.cases(corTests),]
-#corTest needs to be a matrix
-corrs<-rcorr(as.matrix(corTests))$r
-ps<-rcorr(as.matrix(corTests))$P
 
 MainModel<-lm(Prop.H~DScore
-			+Age  #Avg age of county			total_left_out
-			+Sex	# % of females				total_left_out_preAp
+			+Age  #Avg age of county			
+			+Sex	# % of females			
 			+Asian #% of Asians
 			+Black #% African American
 			+Latin #%Latin American	
@@ -381,29 +365,17 @@ MainModel<-lm(Prop.H~DScore
 			+Poli	#Avg political standing
 			+AssoCareer	#Avg degree Explicit men-career
 			+AssoFamily #Avg degree of Explicit women-family
-			+Religous
-			+numDays,
+			+Religous,
+			#+numDays,
 			data=daters, na.action=na.omit)
 
 summary(MainModel, correlation=F)
 
-#add cooks distance numbers to the data frame 
-daters$cooksDis<-cooks.distance(MainModel)
-
-daters<-daters[daters$cooksDis<=0.003125,]
+ht<-tidy(MainModel)
 
 
-XX__tt<-tidy(MainModel)
 
-#coefficents for the model
-coef(summary(MainModel))da
-
-#get z coefficents for different cutoffs and   
-f<-seq(from=0, to=80, by=10)
-g<-unlist(lapply(f, difGates, y=4, z='AssoCareer'))
-check<-data.frame(gate=f,sig=g)
-
-
+#Bernie Data-------------------------------------------------------------------------------------------------
 BMainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders',-c(1)]
 
 #Reshape to long
@@ -427,26 +399,37 @@ BMainData$AssoFamily<-Final$AssoFamily[BmM]
 BMainData$AssoCareer<-Final$AssoCareer[BmM]
 BMainData$CheckFIPS<-Final$FIPS[BmM]
 BMainData$Count<-Final$Count[BmM]
+BMainData$Wieght<-Final$weight[BmM]
 BMainData$Nums<-as.numeric(BMainData$Nums)
 
 #Religion
 BrM<-match(BMainData$FIPS, rel_data$FIPS)
 BMainData$Religous<-rel_data$TOTRATEZ[BrM]
 
+#primary dates
+bDS<-match(BMainData$State, days$State)
+BMainData$numDays<-days$DemNumDays[bDS]
 
 BMainData<-BMainData[!(is.na(BMainData$CheckFIPS)),]
-Bdaters<-BMainData#[BMainData$Count>=20,]
+Bdaters<-BMainData
 
 #get rid of NA rows 
 Bdaters<-Bdaters[!(rowSums(is.na(Bdaters)) > 0),]
-
-#get rid of state after apr 19
-Bdaters<-Bdaters[!(Bdaters$State %in% ap19dem),]
 
 #assign caucus or primary 
 cauc<-c('AK', 'CO', 'HI', 'ID', 'KS', 'ME', 'MI', 'NE', 'NV', 'ND', 'UT', 'WA','WY')
 
 Bdaters$Caucus<-ifelse((Bdaters$State %in% cauc), 1, 0)
+
+
+
+Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
+			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
+			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
+			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
+			Religous=Religous*Wieght, Caucus=Caucus, Wieght=Wieght, numDays=numDays)
+
+
 
 BMainModel<-lm(Prop.H~DScore
 			+Age  #Avg age of county
@@ -462,97 +445,13 @@ BMainModel<-lm(Prop.H~DScore
 			+AssoFamily #Avg degree of Explicit women-family
 			+Religous
 			+Caucus
-			+PrimaryDate,
+			+numDays,
 			data=Bdaters, na.action=na.omit)
 summary(BMainModel, correlation=F)
 
-#add cooks distance numbers to the data frame 
-Bdaters$cooksDis<-cooks.distance(BMainModel)
-
-#take out the outlies and rerun 
-Bdaters<-Bdaters[Bdaters$cooksDis<=0.002882,]
 
 library(broom)
-LL__zz<-tidy(BMainModel)
-
-
-
-
-#Remove All Unmatched Counties
-
-
-
-Bdaters$Bins<-cut(Bdaters$Count, c(20,50,100,500,10500))
-daters$Bins<-cut(daters$Count, c(20,50,100,500,10500))
-
-#bubble plot for (blank) scorce predicting Hillary votes
-windows()
-ggplot(daters, aes(x=AssoCareer, y=Prop.H, color="black",linetype='solid')) +
-    geom_point(aes(size =Bins, shape="solid",alpha=.2, color='black'),pch=21,bg='gray') + 
-    geom_text(hjust = 1, size = 2, label=' ') +
-	coord_cartesian(ylim=c(0,1)) +
-  	stat_smooth(method="lm", fullrange=T, se=F)+
-	geom_abline(aes(intercept=0.4742, slope=-.102984, color="black", linetype='dotted'), size=1)+
-	xlab("Standardized Explicit Gender-Career Bias")+
-	ylab("Proportion of Votes for Clinton")+
-	guides(alpha='none')+
-	scale_color_manual(values=c('black'), guide=F)+
-	scale_linetype_manual(name="Comparison",
-		values=c("solid", "dotted"),labels=c("Clinton v Sanders","Clinton v. Trump"
-					))+
-	scale_size_discrete(name="Project Implicit \nResponses Per County", 
-		labels=c("20-50","51-100","101-500",">500"))+
-	theme_bw()+
-	theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border =element_rect(colour = "black", fill=NA, size=2),
-	panel.background = element_blank())
-	#labs(size='Population Size')
-
-
-# for those signifigance tests__________________________________________________________________________________________
-#MainData == trump data, switch to BMainData for Bernie
-#--religiosity | check, 
-#--political orientation | check, 
-#--income | Check, 
-#--age | check, check
-#--education | check, check
-
-sigTestData<-Cdaters
-sigTestData$Poli<-sigTestData$Poli*-1 #im only suppose to do this with pos predictons
-sigTestData$ReligousPlus<-(sigTestData$AssoCareer+sigTestData$Religous)
-sigTestData$ReligousMinus<-(sigTestData$AssoCareer-sigTestData$Religous)
-
-SigModel<-lm(Prop.H~DScore
-			+Age #Avg age of county
-			+Sex	# % of females
-			+Asian #% of Asians
-			+Black #% African American
-			+Latin #%Latin American	
-			+White #% White American
-			+EduLevel #Avg Edu level
-			+Income
-			+Poli #Avg political standing
-			+AssoFamily
-			+ReligousPlus
-			+ReligousMinus, #Avg degree of Explicit women-family
-			data=sigTestData, na.action=na.omit)
-#summary(SigModel, correlation=F)
-
-total<-rbind(
-HvTDsc, 
-HvTAge, 
-HvTSex,
-HvTAsian,  
-HvTBlack,  
-HvTLatin,
-HvTWhite,  
-HvTEdu,   
-HvTInc,  
-HvTPoli, 
-HvTFam,  
-HvTRel) #<-tidy(SigModel) 
+hb<-tidy(BMainModel)
 
 
 #Hillary vs. The Zodiac Killer__________________________________________________________________-
@@ -562,7 +461,7 @@ CruzData<-votData[votData$Candidate=='T.Cruz',-c(1)]$FIPS
 CMainData<-CMainData[CMainData$FIPS %in% CruzData,-c(1,6)]
 
 #Reshape to long
-CMainData<-w <- reshape(CMainData, timevar = "Candidate",
+CMainData<- reshape(CMainData, timevar = "Candidate",
   idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
 CMainData$Prop.H<-CMainData$Popular.H.Clinton/(CMainData$Popular.H.Clinton+CMainData$Popular.T.Cruz)
 
@@ -585,23 +484,33 @@ CMainData$AssoCareer<-Final$AssoCareer[CmM]
 CMainData$CheckFIPS<-Final$FIPS[CmM]
 CMainData$Count<-Final$Count[CmM]
 CMainData$Nums<-as.numeric(CMainData$Nums)
+CMainData$Wieght<-Final$weight[CmM]
 
 #Religious Data
 CMainData$Religous<-rel_data$TOTRATEZ[CrM]
 
+#primary dates
+cDS<-match(CMainData$State, days$State)
+CMainData$numDays<-days$avgNumDays[cDS]
 
 #Remove All Unmatched Counties
-
 CMainData<-CMainData[!(is.na(CMainData$CheckFIPS)),]
 
 #Set cutoffs in data for model
-Cdaters<-CMainData#[CMainData$Count>=20,]
+Cdaters<-CMainData
 
 #get rid of anythin with an NA
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
-#get rid of states with primaries before apr 19
-Cdaters<-Cdaters[!(Cdaters$State %in% ap19), ]
+#takes out all data with an AVERAGE date after may 1st
+Cdaters<-Cdaters[Cdaters$numDays<90,]
+
+Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
+			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
+			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
+			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
+			Religous=Religous*Wieght, Wieght=Wieght)#, numDays=numDays)
+
 
 CMainModel<-lm(Prop.H~DScore
 			+Age  #Avg age of county
@@ -619,21 +528,7 @@ CMainModel<-lm(Prop.H~DScore
 			data=Cdaters, na.action=na.omit)
 summary(CMainModel, correlation=F)
 
-#add cooks distance numbers to the data frame 
-Cdaters$cooksDis<-cooks.distance(CMainModel)
+hc<-tidy(CMainModel)
 
-#take out the outlies and rerun 
-Cdaters<-Cdaters[Cdaters$cooksDis<=0.003125,]
 
-library(broom)
-#FF__zz<-tidy(CMainModel)
-VV__zz<-tidy(CMainModel)
-
-#quick store for the cooks values (it was just easier to do in the excel file)
-cook_values<-data.frame(analysis=c('HvT_primary', 'HvT_preAp',
-					     'HvB_primary', 'HvB_preAp',
-					     'HvC_primary', 'HvC_preAp'), 
-				cook_vals=c(0.002165674, 0.003238866,
-						0.002104156, 0.002881844,
-						0.002165674, 0.003125))
 

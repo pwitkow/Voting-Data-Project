@@ -4,7 +4,7 @@ library('plyr')
 library('nlme')
 library('ggplot2')
 library('Hmisc')
-install.packages("ggplot2", repos="http://cran.rstudio.com/", dependencies=TRUE)
+library(broom)
 
 #Functions_________________________________________________________________________________________________________________________
 
@@ -243,7 +243,7 @@ Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
 #apply replacements
 Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
 Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
-Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+Final$AssoFamily_SE[Final$Pop==1  | Final$AssoFamily_SE==0]<-Family_SE_Rep
 
 #weights for Dscore and Exp_Bias
 Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
@@ -318,10 +318,11 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoff and do statistics stuff
-daters<-MainData#[MainData$Count>=20,]
+daters<-MainData
 
 #get rid of NA rows 
 daters<-daters[rowSums(is.na(daters)) <= 0,]
+daters<-daters[complete.cases(daters),]
 
 #is there a faster way to do this using matrix multiplication?
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
@@ -356,7 +357,8 @@ MainModel<-lm(Prop.H~DScore
 
 summary(MainModel, correlation=F)
 
-daters$Bins<-cut(daters$Count, c(20,50,100,500,10500))
+df<-tidy(MainModel)
+
 
 #bubble plot for (blank) scorce predicting Hillary votes
 windows()
@@ -384,6 +386,6 @@ ggplot(daters, aes(x=AssoCareer, y=Prop.H, color="black",linetype='solid')) +
 	#labs(size='Population Size')
 
 
-
+ lost<-Final[Final$weight==Inf & !is.na(Final$weight), ]
 
 

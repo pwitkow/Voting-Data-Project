@@ -4,7 +4,8 @@ library('plyr')
 library('nlme')
 library('ggplot2')
 library('Hmisc')
-install.packages("ggplot2", repos="http://cran.rstudio.com/", dependencies=TRUE)
+library('broom')
+
 
 #Functions_________________________________________________________________________________________________________________________
 
@@ -188,7 +189,7 @@ Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
 #apply replacements
 Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
 Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
-Final$AssFamily_SE[Final$Pop==1]<-Family_SE_Rep
+Final$AssoFamily_SE[Final$Pop==1 | Final$AssoFamily_SE==0]<-Family_SE_Rep
 
 #weights for Dscore and Exp_Bias
 Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
@@ -307,8 +308,9 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 #Remove All Unmatched Counties
 
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
+
 #Set cutoffs in data for model
-daters<-MainData   #[MainData$Count>=20,]
+daters<-MainData  
 
 #get rid of NA rows 
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
@@ -345,12 +347,6 @@ MainModel<-lm(Prop.H~DScore
 			data=daters, na.action=na.omit)
 summary(MainModel, correlation=F)
 
-#add cooks distance
-daters$cooksDis<-cooks.distance(MainModel)
-
-#take out the outlies and rerun 
-daters<-daters[daters$cooksDis<=0.001753,] #N & K values in excel sheet
-
 
 #stuff to print model results
 library(broom)
@@ -358,29 +354,6 @@ library(broom)
 modelTable<-tidy(MainModel)
 
 
-#plotty bits
-windows()
-ggplot(daters, aes(x=AssoCareer, y=Prop.H, color="black",linetype='solid')) +
-    geom_point(aes(size =Bins, shape="solid",alpha=.2, color='black'),pch=21,bg='gray') + 
-    geom_text(hjust = 1, size = 2, label=' ') +
-	coord_cartesian(ylim=c(0,1)) +
-  	stat_smooth(method="lm", fullrange=T, se=F)+
-	geom_abline(aes(intercept=0.4742, slope=-.102984, color="black", linetype='dotted'), size=1)+
-	xlab("Standardized Explicit Gender-Career Bias")+
-	ylab("Proportion of Votes for Clinton")+
-	guides(alpha='none')+
-	scale_color_manual(values=c('black'), guide=F)+
-	scale_linetype_manual(name="Comparison",
-		values=c("solid", "dotted"),labels=c("Clinton v Sanders","Clinton v. Trump"
-					))+
-	scale_size_discrete(name="Project Implicit \nResponses Per County", 
-		labels=c("20-50","51-100","101-500",">500"))+
-	theme_bw()+
-	theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border =element_rect(colour = "black", fill=NA, size=2),
-	panel.background = element_blank())
-	#labs(size='Population Size')
+
 
 
