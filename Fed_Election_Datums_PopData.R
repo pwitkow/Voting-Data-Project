@@ -216,7 +216,7 @@ Pop_data$State<-gsub("^.*\\, " , "" ,Pop_data$County.Name)
 Pop_data$State<-unlist(lapply(Pop_data$State, state_abb))
 
 #remove state numbers and do some trickery to get zeros off
-Pop_data$FIPS<-substring(as.character(Pop_data$FIPS),3)
+Pop_data$FIPS<-substring(as.character(Pop_data$FIPS),nchar(as.character(Pop_data$FIPS))-2)
 Pop_data$FIPS<-as.numeric(Pop_data$FIPS)
 Pop_data$FIPS<-as.character(Pop_data$FIPS)
 
@@ -228,8 +228,8 @@ poli_data<-as.data.frame(poli_data)
  #remove all the state "headers"
 poli_data<-poli_data[poli_data$FIPS!=0,]
  #trickery for getting county fips
-poli_data$FIPS<-substr(
-		as.character(poli_data$FIPS), start=3, nchar(poli_data$FIPS))#remove first to elements of the string
+poli_data$FIPS<-substring(
+		as.character(poli_data$FIPS), nchar(as.character(poli_data$FIPS))-2)#remove first to elements of the string
 poli_data$FIPS<-as.numeric(poli_data$FIPS)
 poli_data$FIPS<-as.character(poli_data$FIPS)
 
@@ -253,7 +253,7 @@ rel_data<-rel_data[,c("FIPS", "STNAME", "TOTRATE")]
 rel_data$Abb<-unlist(lapply(rel_data$STNAME, state_abb))
 
 #get rid of zeros
-rel_data$FIPS<-substring(as.character(rel_data$FIPS),3)
+rel_data$FIPS<-substring(as.character(rel_data$FIPS),nchar(as.character(rel_data$FIPS))-2)
 rel_data$FIPS<-as.numeric(rel_data$FIPS)
 rel_data$FIPS<-as.character(rel_data$FIPS)
 
@@ -262,6 +262,16 @@ rel_data$FIPS<-
 rel_data<-rel_data[complete.cases(rel_data),]
 #Turn it into z-scores
 rel_data$TOTRATEZ<-(rel_data$TOTRATE-(mean(rel_data$TOTRATE, na.rm=T)))/sd(rel_data$TOTRATE, na.rm=T)
+
+
+
+
+#Modeled Parameters_______________________________________________________
+quad_data<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\quads.csv")
+quad_data<-as.data.frame(quad_data)
+quad_data$FIPS<-as.character(quad_data$FIPS)
+
+
 
 #Doing Stuff__________________________________________________________________________________________________________					
 #Main Model data shaping and analysis
@@ -278,7 +288,7 @@ mM<-match(MainData$FIPS, Final$FIPS)
 dM<-match(MainData$FIPS, Pop_data$FIPS)
 pM<-match(MainData$FIPS, poli_data$FIPS)
 rM<-match(MainData$FIPS, rel_data$FIPS)
-
+qM<-match(MainData$FIPS, quad_data$FIPS)
 
 #apply Dscore
 MainData$DScore<-Final$DScore[mM]
@@ -287,6 +297,10 @@ MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
 MainData$Wieght<-Final$weight[mM]
+
+#quad Modeled components
+MainData$ACFF<-quad_data$ACFF[qM]
+MainData$ACMC<-quad_data$ACMC[qM]
 
 #demographic data
 MainData$White<-Pop_data$White[dM]/Pop_data$Total[dM]
@@ -320,7 +334,8 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght)
+			Religous=Religous*Wieght,  ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			 Wieght=Wieght)
 
 
 corTests<-daters[,c(12,11,10,21,22,18,16,17,15,20,19,23,24)]
@@ -330,8 +345,11 @@ corrs<-rcorr(as.matrix(corTests))$r
 ps<-rcorr(as.matrix(corTests))$P
 
 
+setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
 
 MainModel<-lm(Prop.H~DScore
+			+ACFF
+			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -348,8 +366,8 @@ MainModel<-lm(Prop.H~DScore
 summary(MainModel, correlation=F)
 
 
-#stuff to print model results
-library(broom)
+
+
 #get the model in a matrix
 modelTable<-tidy(MainModel)
 

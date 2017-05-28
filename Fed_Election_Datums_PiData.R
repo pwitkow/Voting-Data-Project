@@ -280,6 +280,11 @@ rel_data<-rel_data[complete.cases(rel_data),]
 rel_data$TOTRATEZ<-(rel_data$TOTRATE-(mean(rel_data$TOTRATE, na.rm=T)))/sd(rel_data$TOTRATE, na.rm=T)
 
 
+#Modeled Parameters_______________________________________________________
+quad_data<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\quads.csv")
+quad_data<-as.data.frame(quad_data)
+quad_data$FIPS<-as.character(quad_data$FIPS)
+
 
 #Doing Stuff__________________________________________________________________________________________________________					
 #Main Model data shaping and analysis
@@ -294,6 +299,9 @@ MainData$Prop.H<-MainData$Popular.H.Clinton/(MainData$Popular.H.Clinton+MainData
 
 #Attach County IAT-Data
 mM<-match(MainData$FIPS, Final$FIPS)
+rM<-match(MainData$FIPS, rel_data$FIPS)
+qM<-match(MainData$FIPS, quad_data$FIPS)
+
 MainData$Income<-Final$Income[mM]
 MainData$DScore<-Final$DScore[mM]
 MainData$Age<-Final$Age[mM]
@@ -312,8 +320,13 @@ MainData$Wieght<-Final$weight[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
-rM<-match(MainData$FIPS, rel_data$FIPS)
 MainData$Religous<-rel_data$TOTRATEZ[rM]
+
+#quad Modeled components
+MainData$ACFF<-quad_data$ACFF[qM]
+MainData$ACMC<-quad_data$ACMC[qM]
+
+
 
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
@@ -329,18 +342,15 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght)
+			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			 Wieght=Wieght)
 
 
-
-corTests<-daters[,c(21,20,11,12,14,18,16,17,15,13,10,19,24)]
-corTests<-corTests[complete.cases(corTests),]
-#corTest needs to be a matrix
-corrs<-rcorr(as.matrix(corTests))$r
-ps<-rcorr(as.matrix(corTests))$P
-
-
+#run the model and save the data
+setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
 MainModel<-lm(Prop.H~DScore
+			+ACFF
+			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -360,32 +370,5 @@ summary(MainModel, correlation=F)
 df<-tidy(MainModel)
 
 
-#bubble plot for (blank) scorce predicting Hillary votes
-windows()
-ggplot(daters, aes(x=AssoCareer, y=Prop.H, color="black",linetype='solid')) +
-    geom_point(aes(size =Bins, shape="solid",alpha=.2, color='black'),pch=21,bg='gray') + 
-    geom_text(hjust = 1, size = 2, label=' ') +
-	coord_cartesian(ylim=c(0,1)) +
-  	stat_smooth(method="lm", fullrange=T, se=F)+
-	geom_abline(aes(intercept=0.4742, slope=-.102984, color="black", linetype='dotted'), size=1)+
-	xlab("Standardized Explicit Gender-Career Bias")+
-	ylab("Proportion of Votes for Clinton")+
-	guides(alpha='none')+
-	scale_color_manual(values=c('black'), guide=F)+
-	scale_linetype_manual(name="Comparison",
-		values=c("solid", "dotted"),labels=c("Clinton v Sanders","Clinton v. Trump"
-					))+
-	scale_size_discrete(name="Project Implicit \nResponses Per County", 
-		labels=c("20-50","51-100","101-500",">500"))+
-	theme_bw()+
-	theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border =element_rect(colour = "black", fill=NA, size=2),
-	panel.background = element_blank())
-	#labs(size='Population Size')
-
-
- lost<-Final[Final$weight==Inf & !is.na(Final$weight), ]
 
 

@@ -262,7 +262,7 @@ rel_data<-rel_data[,c("FIPS", "STNAME", "TOTRATE")]
 rel_data$Abb<-unlist(lapply(rel_data$STNAME, state_abb))
 
 #get rid of zeros
-rel_data$FIPS<-substring(as.character(rel_data$FIPS),3)
+rel_data$FIPS<-substring(as.character(rel_data$FIPS),nchar(as.character(rel_data$FIPS))-2)
 rel_data$FIPS<-as.numeric(rel_data$FIPS)
 rel_data$FIPS<-as.character(rel_data$FIPS)
 
@@ -286,6 +286,11 @@ days$avgNumDays<-ifelse((days$DemNumDays >0 & days$RepNumDays >0),
 				 (days$DemNumDays+days$RepNumDays)/2, ifelse(days$DemNumDays<0,days$RepNumDays,days$DemNumDays))  
 
 
+#Modeled Parameters_______________________________________________________
+quad_data<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\quads.csv")
+quad_data<-as.data.frame(quad_data)
+quad_data$FIPS<-as.character(quad_data$FIPS)
+
 
 #Doing Stuff__________________________________________________________________________________________________________					
 #Main Model data shaping and analysis
@@ -307,6 +312,8 @@ MainData<-w <- reshape(MainData, timevar = "Candidate",
   idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
 MainData$Prop.H<-MainData$Popular.H.Clinton/(MainData$Popular.H.Clinton+MainData$Popular.D.Trump)
 
+MainData<-MainData[ , -which(names(MainData) %in% c("Nums"))]
+
 #Attach County IAT-Data
 mM<-match(MainData$FIPS, Final$FIPS)
 MainData$Income<-Final$Income[mM]
@@ -324,7 +331,7 @@ MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
 MainData$Wieght<-Final$weight[mM]
-MainData$Nums<-as.numeric(MainData$Nums)
+#MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
 rM<-match(MainData$FIPS, rel_data$FIPS)
@@ -334,13 +341,19 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 mDS<-match(MainData$State, days$State)
 MainData$numDays<-days$avgNumDays[mDS]
 
+qM<-match(MainData$FIPS, quad_data$FIPS)
+#quad Modeled components
+MainData$ACFF<-quad_data$ACFF[qM]
+MainData$ACMC<-quad_data$ACMC[qM]
+
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
+
 #Set cutoff and do statistics stuff
 daters<-MainData
 
 #get rid of NA rows 
-daters<-daters[rowSums(is.na(daters)) <= 0,]
+daters<-daters[!(rowSums(is.na(daters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
 daters<-daters[daters$numDays<90,]
@@ -349,11 +362,18 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght)#,numDays=numDays)
+			Religous=Religous*Wieght, 
+			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Wieght=Wieght,numDays=numDays)
+
+#setwd for export 
+setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
 
 
 
 MainModel<-lm(Prop.H~DScore
+			+ACFF
+			+ACMC
 			+Age  #Avg age of county			
 			+Sex	# % of females			
 			+Asian #% of Asians
@@ -382,6 +402,7 @@ BMainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders
 BMainData<-w <- reshape(BMainData, timevar = "Candidate",
   idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
 BMainData$Prop.H<-BMainData$Popular.H.Clinton/(BMainData$Popular.H.Clinton+BMainData$Popular.B.Sanders)
+BMainData<-BMainData[ , -which(names(BMainData) %in% c("Nums"))]
 
 #Attach County IAT-Data
 BmM<-match(BMainData$FIPS, Final$FIPS)
@@ -400,7 +421,7 @@ BMainData$AssoCareer<-Final$AssoCareer[BmM]
 BMainData$CheckFIPS<-Final$FIPS[BmM]
 BMainData$Count<-Final$Count[BmM]
 BMainData$Wieght<-Final$weight[BmM]
-BMainData$Nums<-as.numeric(BMainData$Nums)
+#BMainData$Nums<-as.numeric(BMainData$Nums)
 
 #Religion
 BrM<-match(BMainData$FIPS, rel_data$FIPS)
@@ -409,6 +430,12 @@ BMainData$Religous<-rel_data$TOTRATEZ[BrM]
 #primary dates
 bDS<-match(BMainData$State, days$State)
 BMainData$numDays<-days$DemNumDays[bDS]
+
+BqM<-match(BMainData$FIPS, quad_data$FIPS)
+#quad Modeled components
+BMainData$ACFF<-quad_data$ACFF[BqM]
+BMainData$ACMC<-quad_data$ACMC[BqM]
+
 
 BMainData<-BMainData[!(is.na(BMainData$CheckFIPS)),]
 Bdaters<-BMainData
@@ -427,11 +454,14 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Caucus=Caucus, Wieght=Wieght, numDays=numDays)
+			Religous=Religous*Wieght, Caucus=Caucus, Wieght=Wieght, numDays=numDays,
+			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
 
 
 
 BMainModel<-lm(Prop.H~DScore
+			+ACFF
+			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -493,6 +523,11 @@ CMainData$Religous<-rel_data$TOTRATEZ[CrM]
 cDS<-match(CMainData$State, days$State)
 CMainData$numDays<-days$avgNumDays[cDS]
 
+CqM<-match(CMainData$FIPS, quad_data$FIPS)
+#quad Modeled components
+CMainData$ACFF<-quad_data$ACFF[CqM]
+CMainData$ACMC<-quad_data$ACMC[CqM]
+
 #Remove All Unmatched Counties
 CMainData<-CMainData[!(is.na(CMainData$CheckFIPS)),]
 
@@ -509,10 +544,13 @@ Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght)#, numDays=numDays)
+			Religous=Religous*Wieght, Wieght=Wieght, numDays=numDays,
+			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
 
 
 CMainModel<-lm(Prop.H~DScore
+			+ACFF
+			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -525,6 +563,7 @@ CMainModel<-lm(Prop.H~DScore
 			+AssoCareer	#Avg degree Explicit men-career
 			+AssoFamily #Avg degree of Explicit women-family
 			+Religous,
+			#+numDays,
 			data=Cdaters, na.action=na.omit)
 summary(CMainModel, correlation=F)
 
