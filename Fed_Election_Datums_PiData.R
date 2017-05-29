@@ -348,8 +348,8 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 
 #run the model and save the data
 setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
-MainModel<-lm(Prop.H~DScore
-			+ACFF
+MainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females

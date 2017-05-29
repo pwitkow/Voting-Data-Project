@@ -368,7 +368,7 @@ daters<-MainData   #[MainData$Count>=20,]
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
-#daters<-daters[daters$numDays<90,]
+daters<-daters[daters$numDays<90,]
 
 #is there a faster way to do this using matrix multiplication?
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
@@ -382,8 +382,8 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
 
 
-MainModel<-lm(Prop.H~DScore
-			+ACFF
+MainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
@@ -477,8 +477,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
 
 #make the model
-BMainModel<-lm(Prop.H~DScore
-			+ACFF
+BMainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
@@ -562,7 +562,7 @@ Cdaters<-CMainData     #[CMainData$Count>=20,]
 #get rid of NA rows 
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
-Cdaters<-Cdaters[Cdaters$numDays<90,]
+#Cdaters<-Cdaters[Cdaters$numDays<90,]
 
 Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
@@ -571,8 +571,8 @@ Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			Religous=Religous*Wieght, Wieght=Wieght, numDays=numDays,
 			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
 
-CMainModel<-lm(Prop.H~DScore
-			+ACFF
+CMainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females

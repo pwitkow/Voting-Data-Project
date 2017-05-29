@@ -371,8 +371,8 @@ setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - 
 
 
 
-MainModel<-lm(Prop.H~DScore
-			+ACFF
+MainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county			
 			+Sex	# % of females			
@@ -459,8 +459,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 
 
 
-BMainModel<-lm(Prop.H~DScore
-			+ACFF
+BMainModel<-lm(Prop.H~#DScore
+			ACFF
 			+ACMC
 			+Age  #Avg age of county
 			+Sex	# % of females
@@ -479,8 +479,6 @@ BMainModel<-lm(Prop.H~DScore
 			data=Bdaters, na.action=na.omit)
 summary(BMainModel, correlation=F)
 
-
-library(broom)
 hb<-tidy(BMainModel)
 
 
@@ -548,7 +546,7 @@ Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
 
 
-CMainModel<-lm(Prop.H~DScore
+CMainModel<-lm(Prop.H~#DScore
 			+ACFF
 			+ACMC
 			+Age  #Avg age of county
