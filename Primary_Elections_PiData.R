@@ -1,3 +1,4 @@
+# Title : Primaries with PI data 
 setwd("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Data Files\\Voting Data")
 #put whatever libraries here
 library('plyr')
@@ -376,8 +377,8 @@ MainModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+Religous,
-			#+numDays,
+			+Religous
+			+numDays,
 			data=daters, na.action=na.omit)
 
 summary(MainModel, correlation=F)
@@ -525,7 +526,7 @@ Cdaters<-CMainData
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
-#Cdaters<-Cdaters[Cdaters$numDays<90,]
+Cdaters<-Cdaters[Cdaters$numDays<90,]
 
 Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 

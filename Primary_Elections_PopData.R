@@ -1,3 +1,5 @@
+#Title: Primary Elections with POp data
+
 setwd("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Data Files\\Voting Data")
 #put whatever libraries here
 library('plyr')
@@ -354,7 +356,7 @@ daters<-MainData   #[MainData$Count>=20,]
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
-daters<-daters[daters$numDays<90,]
+#daters<-daters[daters$numDays<90,]
 
 #is there a faster way to do this using matrix multiplication?
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise,Dscore=DScore*Wieght, Age=Age*Wieght,  
@@ -540,7 +542,7 @@ Cdaters<-CMainData     #[CMainData$Count>=20,]
 #get rid of NA rows 
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
-Cdaters<-Cdaters[Cdaters$numDays<90,]
+#Cdaters<-Cdaters[Cdaters$numDays<90,]
 
 #is there a faster way to do this using matrix multiplication?
 Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise,Dscore=DScore*Wieght, Age=Age*Wieght,  
@@ -561,8 +563,9 @@ CMainModel<-lm(Prop.H~Dscore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+Religous,
-			data=daters, na.action=na.omit)
+			+Religous
+			+numDays,
+			data=Cdaters, na.action=na.omit)
 summary(CMainModel, correlation=F)
 
 Cdf<-tidy(CMainModel)

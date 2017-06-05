@@ -360,9 +360,4 @@ summary(MainModel, correlation=F)
 modelTable<-tidy(MainModel)
 
 
-names(daters)
-hist(daters$DScore)
-windows()
-hist(daters$AssoCareer)
-windows()
-hist(daters$AssoFamily)
+
