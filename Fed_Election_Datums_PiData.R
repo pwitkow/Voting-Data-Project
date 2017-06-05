@@ -217,6 +217,13 @@ iatDataframe$ExpBias<-iatDataframe$AssoCareer-iatDataframe$AssoFamily
 iatDataframe$ExpBias<-(iatDataframe$ExpBias-mean(iatDataframe$ExpBias, 
 					na.rm=T))/sd(iatDataframe$ExpBias, na.rm=T)
 
+#Transfrom explicit measures into z-scores
+iatDataframe$AssoCareer<-(iatDataframe$AssoCareer-mean(iatDataframe$AssoCareer, 
+					na.rm=T))/sd(iatDataframe$AssoCareer, na.rm=T) 
+iatDataframe$AssoFamily<-(iatDataframe$AssoFamily-mean(iatDataframe$AssoFamily, 
+					na.rm=T))/sd(iatDataframe$AssoFamily, na.rm=T)
+
+
 #standardize relgiosity scores
 iatDataframe$Religiosity<-(iatDataframe$Religiosity-mean(iatDataframe$Religiosity, 
 					na.rm=T))/sd(iatDataframe$Religiosity, na.rm=T)
@@ -231,6 +238,7 @@ Final<-ddply(iatDataframe, c("FIPS"), summarise, Income=median(Income, na.rm=T),
 			     White=mean(White,na.rm=T), Black=mean(Black, na.rm=T), Latin=mean(Latin, na.rm=T),
 				Asian=mean(Asian, na.rm=T), Poli=mean(PoliScore, na.rm=T),
 				ExpBias_SE=(sd(ExpBias, na.rm=T)/sqrt(Pop)), ExpBias=mean(ExpBias, na.rm=T),
+				Exp.FC=mean(AssoFamily, na.rm=T), Exp.MW=mean(AssoCareer, na.rm=T),
 				Count=length(FIPS),DScore=mean(dScore, na.rm=T),
 			      DScore_SE=(sd(dScore, na.rm=T)/sqrt(Pop)) ) 
 
@@ -314,6 +322,8 @@ MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
 MainData$Wieght<-Final$weight[mM]
 MainData$ExpBias<-Final$ExpBias[mM]
+MainData$Exp.FF<-Final$Exp.FC[mM]
+MainData$Exp.MW<-Final$Exp.MW[mM]
 MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
@@ -338,9 +348,14 @@ daters<-daters[complete.cases(daters),]
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght,
+			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
 			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
 			 Wieght=Wieght)
+
+corTests<-daters[,c(13,3,15, 14, 18, 17, 4, 10, 11, 5,6,7,8,9,12,16)]
+#corTest needs to be a matrix
+corrs<-rcorr(as.matrix(corTests))$r
+ps<-rcorr(as.matrix(corTests))$P
 
 
 #run the model and save the data
