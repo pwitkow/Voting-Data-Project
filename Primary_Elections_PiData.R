@@ -210,11 +210,11 @@ iatDataframe$PoliScore<-ifelse(is.na(iatDataframe$PoliSix), #if Poli6 has "NA" v
 
 
 
-#Transfrom explicit measures into z-scores
-iatDataframe$AssoCareer<-(iatDataframe$AssoCareer-mean(iatDataframe$AssoCareer, 
-					na.rm=T))/sd(iatDataframe$AssoCareer, na.rm=T) 
-iatDataframe$AssoFamily<-(iatDataframe$AssoFamily-mean(iatDataframe$AssoFamily, 
-					na.rm=T))/sd(iatDataframe$AssoFamily, na.rm=T)
+
+#combine explicit measures
+iatDataframe$ExpBias<-iatDataframe$AssoCareer-iatDataframe$AssoFamily
+iatDataframe$ExpBias<-(iatDataframe$ExpBias-mean(iatDataframe$ExpBias, 
+					na.rm=T))/sd(iatDataframe$ExpBias, na.rm=T)
 
 #standardize relgiosity scores
 iatDataframe$Religiosity<-(iatDataframe$Religiosity-mean(iatDataframe$Religiosity, 
@@ -229,27 +229,23 @@ Final<-ddply(iatDataframe, c("FIPS"), summarise, Income=median(Income, na.rm=T),
 			     Sex=(mean(Females, na.rm=T))/((mean(Females, na.rm=T)+ mean(Males, na.rm=T))),
 			     White=mean(White,na.rm=T), Black=mean(Black, na.rm=T), Latin=mean(Latin, na.rm=T),
 				Asian=mean(Asian, na.rm=T), Poli=mean(PoliScore, na.rm=T),
-				AssoFamily_SE=(sd(AssoFamily, na.rm=T)),AssoFamily=mean(AssoFamily, na.rm=T),
-				AssoCareer_SE=(sd(AssoCareer, na.rm=T)), AssoCareer=mean(AssoCareer, na.rm=T),
+				ExpBias_SE=(sd(ExpBias, na.rm=T)/sqrt(Pop)), ExpBias=mean(ExpBias, na.rm=T),
 				Count=length(FIPS),DScore=mean(dScore, na.rm=T),
 			      DScore_SE=(sd(dScore, na.rm=T)/sqrt(Pop)) ) 
 
 #replacements for those with N==1
 DScore_SE_Rep=mean(Final$DScore_SE[Final$Pop==2], na.rm=T)
-Career_SE_Rep=mean(Final$AssoCareer_SE[Final$Pop==2], na.rm=T)
-Family_SE_Rep=mean(Final$AssoFamily_SE[Final$Pop==2], na.rm=T)
+ExpBias_SE_Rep=mean(Final$ExpBias_SE[Final$Pop==2], na.rm=T)
 
 #apply replacements
-Final$DScore_SE[Final$Pop==1]<-DScore_SE_Rep
-Final$AssoCareer_SE[Final$Pop==1]<-Career_SE_Rep
-Final$AssoFamily_SE[Final$Pop==1 | Final$AssoFamily_SE==0]<-Family_SE_Rep
+Final$DScore_SE[Final$Pop==1 | Final$DScore_SE==0 | is.na(Final$DScore_SE)]<-DScore_SE_Rep
+Final$ExpBias_SE[Final$Pop==1| Final$ExpBias_SE==0 | is.na(Final$ExpBias_SE)]<-ExpBias_SE_Rep
 
 #weights for Dscore and Exp_Bias
 Final$DScore_wieght<-log(1/(Final$DScore_SE^2)) 
-Final$Family_wieght<-log(1/(Final$AssoFamily_SE^2)) 
-Final$Career_wieght<-log(1/(Final$AssoFamily_SE^2))
+Final$ExpBias_wieght<-log(1/(Final$ExpBias_SE^2)) 
 
-Final$weight<-((Final$DScore_wieght+Final$Family_wieght+Final$Career_wieght)/3)
+Final$weight<-((Final$DScore_wieght+Final$ExpBias_wieght)/2)
 
 #____ Religion_________________________________________--#
 rel_data<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\rel_data.csv", head=T)
@@ -331,6 +327,7 @@ MainData$AssoCareer<-Final$AssoCareer[mM]
 MainData$CheckFIPS<-Final$FIPS[mM]
 MainData$Count<-Final$Count[mM]
 MainData$Wieght<-Final$weight[mM]
+MainData$ExpBias<-Final$ExpBias[mM]
 #MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
@@ -358,24 +355,20 @@ daters<-daters[!(rowSums(is.na(daters)) > 0),]
 #takes out all data with an AVERAGE date after may 1st
 daters<-daters[daters$numDays<90,]
 
+#is there a faster way to do this using matrix multiplication?
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, 
-			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
-			Wieght=Wieght,numDays=numDays)
+			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, numDays=numDays,
+			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			 Wieght=Wieght)
 
 #setwd for export 
-setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Weighted+Quad_Regressions')
-
-
-
-MainModel<-lm(Prop.H~#DScore
-			ACFF
-			+ACMC
-			+Age  #Avg age of county			
-			+Sex	# % of females			
+setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\CombinedBias')
+MainModel<-lm(Prop.H~DScore
+			+ExpBias
+			+Age  #Avg age of county
+			+Sex	# % of females
 			+Asian #% of Asians
 			+Black #% African American
 			+Latin #%Latin American	
@@ -383,15 +376,13 @@ MainModel<-lm(Prop.H~#DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+AssoCareer	#Avg degree Explicit men-career
-			+AssoFamily #Avg degree of Explicit women-family
 			+Religous,
 			#+numDays,
 			data=daters, na.action=na.omit)
 
 summary(MainModel, correlation=F)
 
-ht<-tidy(MainModel)
+df<-tidy(MainModel)
 
 
 
@@ -421,6 +412,7 @@ BMainData$AssoCareer<-Final$AssoCareer[BmM]
 BMainData$CheckFIPS<-Final$FIPS[BmM]
 BMainData$Count<-Final$Count[BmM]
 BMainData$Wieght<-Final$weight[BmM]
+BMainData$ExpBias<-Final$ExpBias[BmM]
 #BMainData$Nums<-as.numeric(BMainData$Nums)
 
 #Religion
@@ -449,19 +441,16 @@ cauc<-c('AK', 'CO', 'HI', 'ID', 'KS', 'ME', 'MI', 'NE', 'NV', 'ND', 'UT', 'WA','
 Bdaters$Caucus<-ifelse((Bdaters$State %in% cauc), 1, 0)
 
 
-
+#is there a faster way to do this using matrix multiplication?
 Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Caucus=Caucus, Wieght=Wieght, numDays=numDays,
-			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
+			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght,numDays=numDays,
+			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			 Wieght=Wieght, Caucus=Caucus)
 
-
-
-BMainModel<-lm(Prop.H~#DScore
-			ACFF
-			+ACMC
+BMainModel<-lm(Prop.H~DScore
+			+ExpBias
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -471,15 +460,14 @@ BMainModel<-lm(Prop.H~#DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+AssoCareer	#Avg degree Explicit men-career
-			+AssoFamily #Avg degree of Explicit women-family
-			+Religous
+			+Religous#
 			+Caucus
 			+numDays,
 			data=Bdaters, na.action=na.omit)
+
 summary(BMainModel, correlation=F)
 
-hb<-tidy(BMainModel)
+Bdf<-tidy(BMainModel)
 
 
 #Hillary vs. The Zodiac Killer__________________________________________________________________-
@@ -513,6 +501,7 @@ CMainData$CheckFIPS<-Final$FIPS[CmM]
 CMainData$Count<-Final$Count[CmM]
 CMainData$Nums<-as.numeric(CMainData$Nums)
 CMainData$Wieght<-Final$weight[CmM]
+CMainData$ExpBias<-Final$ExpBias[CmM]
 
 #Religious Data
 CMainData$Religous<-rel_data$TOTRATEZ[CrM]
@@ -536,19 +525,18 @@ Cdaters<-CMainData
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
-Cdaters<-Cdaters[Cdaters$numDays<90,]
+#Cdaters<-Cdaters[Cdaters$numDays<90,]
 
 Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
-			Religous=Religous*Wieght, Wieght=Wieght, numDays=numDays,
-			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
+			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght,numDays=numDays,
+			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			 Wieght=Wieght)
 
 
-CMainModel<-lm(Prop.H~#DScore
-			+ACFF
-			+ACMC
+CMainModel<-lm(Prop.H~DScore
+			+ExpBias
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -558,14 +546,12 @@ CMainModel<-lm(Prop.H~#DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+AssoCareer	#Avg degree Explicit men-career
-			+AssoFamily #Avg degree of Explicit women-family
-			+Religous,
-			#+numDays,
+			+Religous
+			+numDays,
 			data=Cdaters, na.action=na.omit)
-summary(CMainModel, correlation=F)
+summary(CMainModel)
 
-hc<-tidy(CMainModel)
+Cdf<-tidy(CMainModel)
 
 
 
