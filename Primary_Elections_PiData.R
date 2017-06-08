@@ -473,8 +473,8 @@ Bcorrs<-rcorr(as.matrix(BcorTests))$r
 Bps<-rcorr(as.matrix(BcorTests))$P
 
 
-BMainModel<-lm(Prop.H~DScore
-			+ExpBias
+BMainModel<-lm(Prop.H~(DScore*Caucus)
+			+(ExpBias*Caucus)
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -485,7 +485,7 @@ BMainModel<-lm(Prop.H~DScore
 			+Income # Avg Income
 			+Poli	#Avg political standing
 			+Religous#
-			+Caucus
+			#+Caucus
 			+numDays,
 			data=Bdaters, na.action=na.omit)
 
