@@ -460,8 +460,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 
 
 BMainModel<-lm(Prop.H~#DScore
-			ACFF
-			+ACMC
+			(ACFF*Caucus)
+			+(ACMC*Caucus)
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -471,10 +471,10 @@ BMainModel<-lm(Prop.H~#DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+AssoCareer	#Avg degree Explicit men-career
-			+AssoFamily #Avg degree of Explicit women-family
+			+(AssoCareer*Caucus)	#Avg degree Explicit men-career
+			+(AssoFamily*Caucus) #Avg degree of Explicit women-family
 			+Religous
-			+Caucus
+			#+Caucus
 			+numDays,
 			data=Bdaters, na.action=na.omit)
 summary(BMainModel, correlation=F)
