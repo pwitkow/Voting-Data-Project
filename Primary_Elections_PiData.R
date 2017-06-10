@@ -567,5 +567,11 @@ summary(CMainModel, correlation=F)
 
 hc<-tidy(CMainModel)
 
+#simple slopes analysis
+ACFF.slope<-lmres(Prop.H ~ ACFF*Caucus, centered =  c("ACFF", 'Caucus'), data=Bdaters)
+ACFF.slope<-simpleSlope(ACFF.slope, pred="ACFF", mod1="Caucus")
+summary.simpleSlope(ACFF.slope)
 
-
+ExpC.slope<-lmres(Prop.H ~ AssoCareer*Caucus, centered =  c("AssoCareer", 'Caucus'), data=Bdaters)
+ExpC.slope<-simpleSlope(ExpC.slope, pred="AssoCareer", mod1="Caucus")
+summary.simpleSlope(ExpC.slope)
