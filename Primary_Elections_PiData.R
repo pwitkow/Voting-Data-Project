@@ -577,5 +577,7 @@ summary(CMainModel)
 
 Cdf<-tidy(CMainModel)
 
-
-
+#simple slope for HvB
+ExpB.slope<-lmres(Prop.H~ExpBias*Caucus, centered=c("ExpBias","Caucus"), data=Bdaters)
+ExpB.slope<-simpleSlope(ExpB.slope, pred="ExpBias", mod1="Caucus")
+summary.simpleSlope(ExpB.slope)
