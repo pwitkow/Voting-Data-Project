@@ -4,6 +4,8 @@ library('plyr')
 library('nlme')
 library('ggplot2')
 library('Hmisc')
+library(broom)
+library(pequod)
 #Functions_________________________________________________________________________________________________________________________
 
 simpleCap <- function(x) {
@@ -460,8 +462,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 
 
 BMainModel<-lm(Prop.H~#DScore
-			(ACFF*Caucus)
-			+(ACMC*Caucus)
+			(ACFF)
+			+(ACMC)
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -471,12 +473,12 @@ BMainModel<-lm(Prop.H~#DScore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+(AssoCareer*Caucus)	#Avg degree Explicit men-career
-			+(AssoFamily*Caucus) #Avg degree of Explicit women-family
+			+(AssoCareer)	#Avg degree Explicit men-career
+			+(AssoFamily) #Avg degree of Explicit women-family
 			+Religous
 			#+Caucus
 			+numDays,
-			data=Bdaters, na.action=na.omit)
+			data=Bdaters[Bdaters$Caucus==1,], na.action=na.omit)
 summary(BMainModel, correlation=F)
 
 hb<-tidy(BMainModel)
