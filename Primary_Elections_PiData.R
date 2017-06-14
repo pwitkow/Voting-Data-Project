@@ -457,7 +457,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght,AssoCareer=AssoCareer*Wieght,AssoFamily=AssoFamily*Wieght, 
 			Religous=Religous*Wieght, Caucus=Caucus, Wieght=Wieght, numDays=numDays,
-			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght)
+			ACFF=ACFF*Wieght, ACMC=ACMC*Wieght, num_votes=Popular.H.Clinton+Popular.B.Sanders,
+			Count=Count)
 
 
 
