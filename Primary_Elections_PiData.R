@@ -465,7 +465,8 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
 			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
-			 Wieght=Wieght,numDays=numDays, Caucus=Caucus)
+			 Wieght=Wieght,numDays=numDays, Caucus=Caucus,num_votes=Popular.H.Clinton+Popular.B.Sanders,
+			Count=Count)
 
 BcorTests<-Bdaters[,c(13,3,15, 14, 18, 17, 4, 10, 11, 5,6,7,8,9,12,16,20, 21)]
 #corTest needs to be a matrix
@@ -577,7 +578,272 @@ summary(CMainModel)
 
 Cdf<-tidy(CMainModel)
 
-#simple slope for HvB
+#simple slope for HvB-----------------------------------------------------------------------------
 ExpB.slope<-lmres(Prop.H~ExpBias*Caucus, centered=c("ExpBias","Caucus"), data=Bdaters)
 ExpB.slope<-simpleSlope(ExpB.slope, pred="ExpBias", mod1="Caucus")
 summary.simpleSlope(ExpB.slope)
+
+#Bernie Sanders--------------------------------------------------------------------------
+#  Not touched yet. Gotta do the plus minus analyses    
+
+
+f<-Bdaters
+sigTestData<-f
+sigTestData$DScore<-sigTestData$DScore*-1 #im only suppose to do this with pos predictons
+sigTestData$DScorePlus<-(sigTestData$AssoCareer+sigTestData$DScore)
+sigTestData$DScoreMinus<-(sigTestData$AssoCareer-sigTestData$DScore)
+
+SigModel<-lm(Prop.H~DScorePlus
+			+DScoreMinus
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTDsc<-tidy(SigModel)
+
+sigTestData<-f
+sigTestData$Age<-sigTestData$Age*-1 #im only suppose to do this with pos predictons
+sigTestData$AgePlus<-(sigTestData$AssoCareer+sigTestData$Age)
+sigTestData$AgeMinus<-(sigTestData$AssoCareer-sigTestData$Age)
+
+SigModel<-lm(Prop.H~DScore
+			+AgePlus
+			+AgeMinus #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTAge<-tidy(SigModel)
+
+sigTestData<-f
+#sigTestData$Sex<-sigTestData$Sex*-1 #im only suppose to do this with pos predictons
+sigTestData$SexPlus<-(sigTestData$AssoCareer+sigTestData$Sex)
+sigTestData$SexMinus<-(sigTestData$AssoCareer-sigTestData$Sex)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+SexPlus
+			+SexMinus	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTSex<-tidy(SigModel)
+
+sigTestData<-f
+#sigTestData$Asian<-sigTestData$Asian*-1 #im only suppose to do this with pos predictons
+sigTestData$AsianPlus<-(sigTestData$AssoCareer+sigTestData$Asian)
+sigTestData$AsianMinus<-(sigTestData$AssoCareer-sigTestData$Asian)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+AsianPlus
+			+AsianMinus #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTAsian<-tidy(SigModel)
+
+sigTestData<-f
+sigTestData$Black<-sigTestData$Black*-1 #im only suppose to do this with pos predictons
+sigTestData$BlackPlus<-(sigTestData$AssoCareer+sigTestData$Black)
+sigTestData$BlackMinus<-(sigTestData$AssoCareer-sigTestData$Black)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+BlackPlus
+			+BlackMinus#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTBlack<-tidy(SigModel)
+
+
+sigTestData<-f
+#sigTestData$Latin<-sigTestData$Latin*-1 #im only suppose to do this with pos predictons
+sigTestData$LatinPlus<-(sigTestData$AssoCareer+sigTestData$Latin)
+sigTestData$LatinMinus<-(sigTestData$AssoCareer-sigTestData$Latin)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+LatinPlus
+			+LatinMinus #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTLatin<-tidy(SigModel)
+
+
+
+
+sigTestData<-f
+#sigTestData$White<-sigTestData$White*-1 #im only suppose to do this with pos predictons
+sigTestData$WhitePlus<-(sigTestData$AssoCareer+sigTestData$White)
+sigTestData$WhiteMinus<-(sigTestData$AssoCareer-sigTestData$White)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+WhitePlus
+			+WhiteMinus #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTWhite<-tidy(SigModel)
+
+sigTestData<-f
+#sigTestData$EduLevel<-sigTestData$EduLevel*-1 #im only suppose to do this with pos predictons
+sigTestData$EduLevelPlus<-(sigTestData$AssoCareer+sigTestData$EduLevel)
+sigTestData$EduLevelMinus<-(sigTestData$AssoCareer-sigTestData$EduLevel)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevelPlus
+			+EduLevelMinus #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTEdu<-tidy(SigModel)
+
+
+sigTestData<-f
+sigTestData$Income<-sigTestData$Income*-1 #im only suppose to do this with pos predictons
+sigTestData$IncomePlus<-(sigTestData$AssoCareer+sigTestData$Income)
+sigTestData$IncomeMinus<-(sigTestData$AssoCareer-sigTestData$Income)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+IncomePlus
+			+IncomeMinus # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTInc<-tidy(SigModel)
+
+sigTestData<-f
+sigTestData$Poli<-sigTestData$Poli*-1 #im only suppose to do this with pos predictons
+sigTestData$PoliPlus<-(sigTestData$AssoCareer+sigTestData$Poli)
+sigTestData$PoliMinus<-(sigTestData$AssoCareer-sigTestData$Poli)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+PoliPlus
+			+PoliMinus #Avg political standing
+			+AssoFamily
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTPoli<-tidy(SigModel)
+
+sigTestData<-f
+#sigTestData$AssoFamily<-sigTestData$AssoFamily*-1 #im only suppose to do this with pos predictons
+sigTestData$AssoFamilyPlus<-(sigTestData$AssoCareer+sigTestData$AssoFamily)
+sigTestData$AssoFamilyMinus<-(sigTestData$AssoCareer-sigTestData$AssoFamily)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamilyPlus
+			+AssoFamilyMinus
+			+Religous, #Avg degree of Explicit women-family
+			data=sigTestData, na.action=na.omit)
+HvTFam<-tidy(SigModel)
+
+sigTestData<-f
+#sigTestData$Religous<-sigTestData$Religous*-1 #im only suppose to do this with pos predictons
+sigTestData$ReligousPlus<-(sigTestData$AssoCareer+sigTestData$Religous)
+sigTestData$ReligousMinus<-(sigTestData$AssoCareer-sigTestData$Religous)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+AssoFamily
+			+ReligousPlus
+			+ReligousMinus
+			data=sigTestData, na.action=na.omit)
+HvTRel<-tidy(SigModel)
+
+
+
