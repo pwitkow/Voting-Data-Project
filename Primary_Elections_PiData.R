@@ -50,6 +50,9 @@ matchCodes$CountyName<-unlist(lapply(matchCodes$CountyName,cleanNames))
 
 #AK is all one district
 matchCodes[matchCodes$State=='AK',]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
+matchCodes[matchCodes$State=='ND',]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+matchCodes[matchCodes$State=='KS',]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
+
 
 #HAND WRITTEN COUNTY BECAUSE THEY THEIR VOTING DISTRICTS AREN'T THE SAME THING!!
 #Can you belive it?
@@ -121,6 +124,8 @@ votData$Nums<-matchCodes$Nums[vM]
 #AK is all one district
 votData[votData$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
 
+votData[votData$State=="ND",]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+votData[votData$State=="KS",]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
 
 
 #IAT Data________________________________________________________________________________________________________________
@@ -155,11 +160,9 @@ iatDataframe$FIPS<-
 
 #Make all alsaka respondents from the same voting district
 iatDataframe[iatDataframe$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
+iatDataframe[iatDataframe$State=="ND",]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+iatDataframe[iatDataframe$State=="KS",]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
 
-
-#Reform minnosota because its coutnies != voting districts
-#In this authors opinion, it should be declared a wildlife
-#sancutary for gerry-manders!
 
 	#get all the fips that need to be replace
 mNFips1<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='1st District',]$FIPS
@@ -312,11 +315,12 @@ MainData<-MainData[MainData$FIPS %in% TrumData,-c(1,6)]
 
 
 #Reshape to long
+MainData<-MainData[ , -which(names(MainData) %in% c("Nums"))]
 MainData<-w <- reshape(MainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 MainData$Prop.H<-MainData$Popular.H.Clinton/(MainData$Popular.H.Clinton+MainData$Popular.D.Trump)
 
-MainData<-MainData[ , -which(names(MainData) %in% c("Nums"))]
+
 
 #Attach County IAT-Data
 mM<-match(MainData$FIPS, Final$FIPS)
@@ -348,11 +352,6 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 mDS<-match(MainData$State, days$State)
 MainData$numDays<-days$avgNumDays[mDS]
 
-qM<-match(MainData$FIPS, quad_data$FIPS)
-#quad Modeled components
-MainData$ACFF<-quad_data$ACFF[qM]
-MainData$ACMC<-quad_data$ACMC[qM]
-
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 
@@ -363,14 +362,14 @@ daters<-MainData
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
 
 #takes out all data with an AVERAGE date after may 1st
-daters<-daters[daters$numDays<90,]
+#daters<-daters[daters$numDays<90,]
 
 #is there a faster way to do this using matrix multiplication?
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
-			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Religous=Religous*Wieght,
 			 Wieght=Wieght, numDays=numDays)
 
 corTests<-daters[,c(13,3,15, 14, 18, 17, 4, 10, 11, 5,6,7,8,9,12,16,20)]
@@ -404,12 +403,12 @@ df<-tidy(MainModel)
 
 #Bernie Data-------------------------------------------------------------------------------------------------
 BMainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders',-c(1)]
-
+BMainData<-BMainData[ , -which(names(BMainData) %in% c("Nums"))]
 #Reshape to long
 BMainData<-w <- reshape(BMainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 BMainData$Prop.H<-BMainData$Popular.H.Clinton/(BMainData$Popular.H.Clinton+BMainData$Popular.B.Sanders)
-BMainData<-BMainData[ , -which(names(BMainData) %in% c("Nums"))]
+
 
 #Attach County IAT-Data
 BmM<-match(BMainData$FIPS, Final$FIPS)
@@ -441,11 +440,6 @@ BMainData$Religous<-rel_data$TOTRATEZ[BrM]
 bDS<-match(BMainData$State, days$State)
 BMainData$numDays<-days$DemNumDays[bDS]
 
-BqM<-match(BMainData$FIPS, quad_data$FIPS)
-#quad Modeled components
-BMainData$ACFF<-quad_data$ACFF[BqM]
-BMainData$ACMC<-quad_data$ACMC[BqM]
-
 
 BMainData<-BMainData[!(is.na(BMainData$CheckFIPS)),]
 Bdaters<-BMainData
@@ -464,7 +458,7 @@ Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
-			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Religous=Religous*Wieght, 
 			 Wieght=Wieght,numDays=numDays, Caucus=Caucus,num_votes=Popular.H.Clinton+Popular.B.Sanders,
 			Count=Count)
 
@@ -475,7 +469,7 @@ Bps<-rcorr(as.matrix(BcorTests))$P
 
 
 BMainModel<-lm(Prop.H~(DScore)
-			+(ExpBias)
+			+(ExpBias*Caucus)
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -502,8 +496,9 @@ CruzData<-votData[votData$Candidate=='T.Cruz',-c(1)]$FIPS
 CMainData<-CMainData[CMainData$FIPS %in% CruzData,-c(1,6)]
 
 #Reshape to long
+CMainData<-CMainData[ , -which(names(CMainData) %in% c("Nums"))]
 CMainData<- reshape(CMainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 CMainData$Prop.H<-CMainData$Popular.H.Clinton/(CMainData$Popular.H.Clinton+CMainData$Popular.T.Cruz)
 
 #Attach County IAT-Data
@@ -524,7 +519,6 @@ CMainData$AssoFamily<-Final$AssoFamily[CmM]
 CMainData$AssoCareer<-Final$AssoCareer[CmM]
 CMainData$CheckFIPS<-Final$FIPS[CmM]
 CMainData$Count<-Final$Count[CmM]
-CMainData$Nums<-as.numeric(CMainData$Nums)
 CMainData$Wieght<-Final$weight[CmM]
 CMainData$ExpBias<-Final$ExpBias[CmM]
 
@@ -535,10 +529,6 @@ CMainData$Religous<-rel_data$TOTRATEZ[CrM]
 cDS<-match(CMainData$State, days$State)
 CMainData$numDays<-days$avgNumDays[cDS]
 
-CqM<-match(CMainData$FIPS, quad_data$FIPS)
-#quad Modeled components
-CMainData$ACFF<-quad_data$ACFF[CqM]
-CMainData$ACMC<-quad_data$ACMC[CqM]
 
 #Remove All Unmatched Counties
 CMainData<-CMainData[!(is.na(CMainData$CheckFIPS)),]
@@ -556,7 +546,7 @@ Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Ag
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght,numDays=numDays,
-			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Religous=Religous*Wieght,
 			 Wieght=Wieght)
 
 
@@ -588,10 +578,11 @@ summary.simpleSlope(ExpB.slope)
 
 
 f<-Bdaters
+f$ExpInt<-f$ExpBias*f$Caucus
 sigTestData<-f
-sigTestData$DScore<-sigTestData$DScore*-1 #im only suppose to do this with pos predictons
-sigTestData$DScorePlus<-(sigTestData$AssoCareer+sigTestData$DScore)
-sigTestData$DScoreMinus<-(sigTestData$AssoCareer-sigTestData$DScore)
+sigTestData$DScore<-sigTestData$DScore*1 #im only suppose to do this with pos predictons
+sigTestData$DScorePlus<-(sigTestData$ExpInt+sigTestData$DScore)
+sigTestData$DScoreMinus<-(sigTestData$ExpInt-sigTestData$DScore)
 
 SigModel<-lm(Prop.H~DScorePlus
 			+DScoreMinus
@@ -604,15 +595,14 @@ SigModel<-lm(Prop.H~DScorePlus
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTDsc<-tidy(SigModel)
 
 sigTestData<-f
 sigTestData$Age<-sigTestData$Age*-1 #im only suppose to do this with pos predictons
-sigTestData$AgePlus<-(sigTestData$AssoCareer+sigTestData$Age)
-sigTestData$AgeMinus<-(sigTestData$AssoCareer-sigTestData$Age)
+sigTestData$AgePlus<-(sigTestData$ExpInt+sigTestData$Age)
+sigTestData$AgeMinus<-(sigTestData$ExpInt-sigTestData$Age)
 
 SigModel<-lm(Prop.H~DScore
 			+AgePlus
@@ -625,15 +615,14 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTAge<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$Sex<-sigTestData$Sex*-1 #im only suppose to do this with pos predictons
-sigTestData$SexPlus<-(sigTestData$AssoCareer+sigTestData$Sex)
-sigTestData$SexMinus<-(sigTestData$AssoCareer-sigTestData$Sex)
+sigTestData$Sex<-sigTestData$Sex*1 #im only suppose to do this with pos predictons
+sigTestData$SexPlus<-(sigTestData$ExpInt+sigTestData$Sex)
+sigTestData$SexMinus<-(sigTestData$ExpInt-sigTestData$Sex)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -646,15 +635,14 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTSex<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$Asian<-sigTestData$Asian*-1 #im only suppose to do this with pos predictons
-sigTestData$AsianPlus<-(sigTestData$AssoCareer+sigTestData$Asian)
-sigTestData$AsianMinus<-(sigTestData$AssoCareer-sigTestData$Asian)
+sigTestData$Asian<-sigTestData$Asian*-1 #im only suppose to do this with pos predictons
+sigTestData$AsianPlus<-(sigTestData$ExpInt+sigTestData$Asian)
+sigTestData$AsianMinus<-(sigTestData$ExpInt-sigTestData$Asian)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -667,15 +655,14 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTAsian<-tidy(SigModel)
 
 sigTestData<-f
 sigTestData$Black<-sigTestData$Black*-1 #im only suppose to do this with pos predictons
-sigTestData$BlackPlus<-(sigTestData$AssoCareer+sigTestData$Black)
-sigTestData$BlackMinus<-(sigTestData$AssoCareer-sigTestData$Black)
+sigTestData$BlackPlus<-(sigTestData$ExpInt+sigTestData$Black)
+sigTestData$BlackMinus<-(sigTestData$ExpInt-sigTestData$Black)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -688,16 +675,15 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTBlack<-tidy(SigModel)
 
 
 sigTestData<-f
-#sigTestData$Latin<-sigTestData$Latin*-1 #im only suppose to do this with pos predictons
-sigTestData$LatinPlus<-(sigTestData$AssoCareer+sigTestData$Latin)
-sigTestData$LatinMinus<-(sigTestData$AssoCareer-sigTestData$Latin)
+sigTestData$Latin<-sigTestData$Latin*-1 #im only suppose to do this with pos predictons
+sigTestData$LatinPlus<-(sigTestData$ExpInt+sigTestData$Latin)
+sigTestData$LatinMinus<-(sigTestData$ExpInt-sigTestData$Latin)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -710,7 +696,6 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTLatin<-tidy(SigModel)
@@ -719,30 +704,29 @@ HvTLatin<-tidy(SigModel)
 
 
 sigTestData<-f
-#sigTestData$White<-sigTestData$White*-1 #im only suppose to do this with pos predictons
-sigTestData$WhitePlus<-(sigTestData$AssoCareer+sigTestData$White)
-sigTestData$WhiteMinus<-(sigTestData$AssoCareer-sigTestData$White)
+sigTestData$White<-sigTestData$White*1 #im only suppose to do this with pos predictons
+sigTestData$WhitePlus<-(sigTestData$ExpInt+sigTestData$White)
+sigTestData$WhiteMinus<-(sigTestData$ExpInt-sigTestData$White)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
-			+Black#% African American
+			+Black #% African American
 			+Latin #%Latin American	
 			+WhitePlus
 			+WhiteMinus #% White American
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTWhite<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$EduLevel<-sigTestData$EduLevel*-1 #im only suppose to do this with pos predictons
-sigTestData$EduLevelPlus<-(sigTestData$AssoCareer+sigTestData$EduLevel)
-sigTestData$EduLevelMinus<-(sigTestData$AssoCareer-sigTestData$EduLevel)
+sigTestData$EduLevel<-sigTestData$EduLevel*-1 #im only suppose to do this with pos predictons
+sigTestData$EduLevelPlus<-(sigTestData$ExpInt+sigTestData$EduLevel)
+sigTestData$EduLevelMinus<-(sigTestData$ExpInt-sigTestData$EduLevel)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -755,7 +739,6 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevelMinus #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTEdu<-tidy(SigModel)
@@ -763,8 +746,8 @@ HvTEdu<-tidy(SigModel)
 
 sigTestData<-f
 sigTestData$Income<-sigTestData$Income*-1 #im only suppose to do this with pos predictons
-sigTestData$IncomePlus<-(sigTestData$AssoCareer+sigTestData$Income)
-sigTestData$IncomeMinus<-(sigTestData$AssoCareer-sigTestData$Income)
+sigTestData$IncomePlus<-(sigTestData$ExpInt+sigTestData$Income)
+sigTestData$IncomeMinus<-(sigTestData$ExpInt-sigTestData$Income)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -777,15 +760,14 @@ SigModel<-lm(Prop.H~DScore
 			+IncomePlus
 			+IncomeMinus # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTInc<-tidy(SigModel)
 
 sigTestData<-f
-sigTestData$Poli<-sigTestData$Poli*-1 #im only suppose to do this with pos predictons
-sigTestData$PoliPlus<-(sigTestData$AssoCareer+sigTestData$Poli)
-sigTestData$PoliMinus<-(sigTestData$AssoCareer-sigTestData$Poli)
+sigTestData$Poli<-sigTestData$Poli*1 #im only suppose to do this with pos predictons
+sigTestData$PoliPlus<-(sigTestData$ExpInt+sigTestData$Poli)
+sigTestData$PoliMinus<-(sigTestData$ExpInt-sigTestData$Poli)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -798,36 +780,14 @@ SigModel<-lm(Prop.H~DScore
 			+Income # Avg Income
 			+PoliPlus
 			+PoliMinus #Avg political standing
-			+AssoFamily
 			+Religous, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTPoli<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$AssoFamily<-sigTestData$AssoFamily*-1 #im only suppose to do this with pos predictons
-sigTestData$AssoFamilyPlus<-(sigTestData$AssoCareer+sigTestData$AssoFamily)
-sigTestData$AssoFamilyMinus<-(sigTestData$AssoCareer-sigTestData$AssoFamily)
-
-SigModel<-lm(Prop.H~DScore
-			+Age #Avg age of county
-			+Sex	# % of females
-			+Asian #% of Asians
-			+Black#% African American
-			+Latin #%Latin American	
-			+White #% White American
-			+EduLevel #Avg Edu level
-			+Income # Avg Income
-			+Poli #Avg political standing
-			+AssoFamilyPlus
-			+AssoFamilyMinus
-			+Religous, #Avg degree of Explicit women-family
-			data=sigTestData, na.action=na.omit)
-HvTFam<-tidy(SigModel)
-
-sigTestData<-f
 #sigTestData$Religous<-sigTestData$Religous*-1 #im only suppose to do this with pos predictons
-sigTestData$ReligousPlus<-(sigTestData$AssoCareer+sigTestData$Religous)
-sigTestData$ReligousMinus<-(sigTestData$AssoCareer-sigTestData$Religous)
+sigTestData$ReligousPlus<-(sigTestData$ExpInt+sigTestData$Religous)
+sigTestData$ReligousMinus<-(sigTestData$ExpInt-sigTestData$Religous)
 
 SigModel<-lm(Prop.H~DScore
 			+Age #Avg age of county
@@ -839,11 +799,11 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+AssoFamily
 			+ReligousPlus
-			+ReligousMinus
+			+ReligousMinus,
 			data=sigTestData, na.action=na.omit)
 HvTRel<-tidy(SigModel)
-
+total<-rbind(HvTDsc, HvTAge, HvTSex, HvTAsian, HvTBlack, HvTLatin, HvTWhite, 
+		HvTEdu, HvTInc, HvTPoli, HvTRel)
 
 

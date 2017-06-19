@@ -9,10 +9,8 @@ ggplot(daters, aes(x=DScore, y=Prop.H, color="black",linetype='solid')) +
     geom_text(hjust = 1, size = 2, label=' ') +
 	coord_cartesian(ylim=c(.1,1)) +
   	stat_smooth(method="lm", fullrange=T, se=F)+
-	#geom_abline(aes(intercept=0.4742, slope=-.102984, color="black", linetype='dotted'), size=1)+
-	
-	xlab("Standardized Explicit Gender-Career Bias")+
-	ylab("Proportion of Votes \n for Clinton")+
+	xlab("Standardized Implicit Stereotypes")+
+	ylab("Proportion of Votes for Clinton")+
 	guides(alpha='none')+guides(linetype=FALSE)+
 	scale_color_manual(values=c('black'), guide=F)+
 	#scale_linetype_manual(name="Comparison",
@@ -39,13 +37,11 @@ ggplot(Bdaters, aes(x=ExpBias, y=Prop.H, color="black",linetype=as.factor(Caucus
     geom_text(hjust = 1, size = 2, label=' ') +
 	coord_cartesian(ylim=c(.1,1), xlim=c(-4, 6)) +
   	stat_smooth(method="lm", fullrange=T, se=F)+
-	#geom_smooth(daters[daters$Caucus=1,],aes(x=DScore, y=Prop.H, color="black",linetype='solid'), 
-	#						method=lm, se=FALSE)+
-	
-	xlab("Standardized Explicit Gender-Career Bias")+
-	ylab("Proportion of Votes \n for Clinton")+
+	xlab("Standardized Explicit Gender Stereotypes")+
+	ylab("Proportion of Votes for Clinton")+
 	guides(alpha='none')+#guides(linetype=FALSE)+
 	scale_color_manual(values=c('black'), guide=F)+
+	#changes line types for graph
 	scale_linetype_manual(name="Comparison",
 	values=c("solid", "dotted"),labels=c("Primary","Caucus"))+
 	scale_size_discrete(name="Project Implicit \nResponses Per County", 

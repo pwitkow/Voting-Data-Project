@@ -52,41 +52,8 @@ matchCodes$CountyName<-unlist(lapply(matchCodes$CountyName,cleanNames))
 matchCodes[matchCodes$State=='AK',]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
 matchCodes[matchCodes$State=='AK',]$Nums<-matchCodes[matchCodes$State=='AK',]$Nums[1]
 
-#HAND WRITTEN COUNTY BECAUSE THEY THEIR VOTING DISTRICTS AREN'T THE SAME THING!!
-#Can you belive it?
-disOne<-c('Rock', "Nobles",'Jackson', 'Martin','Faribault', 'Freeborn','Mower','Fillmore', 'Houston',
-	    'Winona','Olmsted','Dodge', 'Steele', 'Waseca', 'Blue Earth', 'Watonwan', 'Brown','Nicollet',
-	    'Le Sueur', 'Rice')
-disOne<-unlist(lapply(disOne, addCounty))
-disTwo<-c("Goodhue", 'Wabasha', 'Dakota', "Scott")
-disTwo<-unlist(lapply(disTwo, addCounty))
-disThree<-c('Hennepin County')	#Also dis5
-disFour<-c('Ramsey County')
-disSix<-c('Benton','Sherburne','Anoka','Washington','Wright','Carver')
-disSix<-unlist(lapply(disSix, addCounty))
-disSeven<-c('Cottonwood', 'Murray', 'Pipestone','Lincoln', 'Lyon','Redwood','Yellow Medicine',
-		'Renville','Sibley','Mcleod','Lac Qui Parle', 'Chippewa', 'Kandiyohi','Meeker', 'Big Stone',
-		'Swift', 'Traverse', 'Stevens', 'Pope','Grant','Douglas','Todd','Wilkin','Otter Tail','Clay',
-		'Becker', 'Norman', 'Mahnomen','Polk','Clearwater','Beltrami','Red Lake', 'Pennington','Marshall', 
-		'Kittson','Roseau', 'Lake Of The Woods')
-disSeven<-unlist(lapply(disSeven, addCounty))
-disEight<-c('Koochiching', 'St. Louis','Lake','Cook','Itasca','Hubbard','Cass','Wadena', 'Crow Wing',
-		'Aitkin','Carlton','Morrison','Mille Lacs','Kanabec','Pine','Isanti','Chisago')
-disEight<-unlist(lapply(disEight, addCounty))
 
-#Give them the names
-matchCodes[matchCodes$State=='MN',]$CountyName<-
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disOne, '1st District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disTwo, '2nd District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disThree, '3rd District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disFour, '4th District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disSix, '6th District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disSeven, '7th District',
-	ifelse(matchCodes[matchCodes$State=='MN',]$CountyName %in% disEight, '8th District', 'Der'
-								)))))))
-
-
-#Voting data________________________________________________________________________________________________________________
+#Voting data____________________3002-2040____________________________________________________________________________________________
 
 vData<-list.files(pattern='.csv')
 vData<-lapply(vData, read.csv, head=T, stringsAsFactors=F)
@@ -159,24 +126,7 @@ iatDataframe$FIPS<-
 iatDataframe[iatDataframe$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
 
 
-#Reform minnosota because its coutnies != voting districts
-#In this authors opinion, it should be declared a wildlife
-#sancutary for gerry-manders!
-
 	#get all the fips that need to be replace
-mNFips1<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='1st District',]$FIPS
-mNFips2<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='2nd District',]$FIPS
-mNFips6<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='6th District',]$FIPS
-mNFips7<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='7th District',]$FIPS
-mNFips8<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='8th District',]$FIPS
-
-iatDataframe[iatDataframe$State=='MN',]$FIPS<-
-	ifelse(iatDataframe[iatDataframe$State=='MN',]$FIPS %in% mNFips1, mNFips1[1],
-	ifelse(iatDataframe[iatDataframe$State=='MN',]$FIPS %in% mNFips2, mNFips2[1],
-	ifelse(iatDataframe[iatDataframe$State=='MN',]$FIPS %in% mNFips6, mNFips6[1],
-	ifelse(iatDataframe[iatDataframe$State=='MN',]$FIPS %in% mNFips7, mNFips7[1],
-	ifelse(iatDataframe[iatDataframe$State=='MN',]$FIPS %in% mNFips8, mNFips8[1],
-	iatDataframe[iatDataframe$State=='MN',]$FIPS)))))
 
 iatDataframe$eduLevel<-ifelse(iatDataframe$eduLevel>=10, 10, iatDataframe$eduLevel)
 
@@ -297,8 +247,9 @@ quad_data$FIPS<-as.character(quad_data$FIPS)
 MainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='D.Trump',-c(1)]
 
 #Reshape to long
+MainData<-MainData[ , -which(names(MainData) %in% c("Nums"))]
 MainData<-w <- reshape(MainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 MainData$Prop.H<-MainData$Popular.H.Clinton/(MainData$Popular.H.Clinton+MainData$Popular.D.Trump)
 
 #Attach County IAT-Data
@@ -329,11 +280,6 @@ MainData$Nums<-as.numeric(MainData$Nums)
 #Religion
 MainData$Religous<-rel_data$TOTRATEZ[rM]
 
-#quad Modeled components
-MainData$ACFF<-quad_data$ACFF[qM]
-MainData$ACMC<-quad_data$ACMC[qM]
-
-
 
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
@@ -349,7 +295,7 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
-			Religous=Religous*Wieght, ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Religous=Religous*Wieght,
 			 Wieght=Wieght, num_votes=Popular.H.Clinton+Popular.D.Trump,
 			Count=Count)
 
@@ -425,7 +371,7 @@ SigModel<-lm(Prop.H~ExpBias
 HvTAge<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$Sex<-sigTestData$Sex*-1 #im only suppose to do this with pos predictons
+sigTestData$Sex<-sigTestData$Sex*-1 #im only suppose to do this with pos predictons
 sigTestData$SexPlus<-(sigTestData$DScore+sigTestData$Sex)
 sigTestData$SexMinus<-(sigTestData$DScore-sigTestData$Sex)
 
@@ -445,7 +391,7 @@ SigModel<-lm(Prop.H~ExpBias
 HvTSex<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$Asian<-sigTestData$Asian*-1 #im only suppose to do this with pos predictons
+sigTestData$Asian<-sigTestData$Asian*-1 #im only suppose to do this with pos predictons
 sigTestData$AsianPlus<-(sigTestData$DScore+sigTestData$Asian)
 sigTestData$AsianMinus<-(sigTestData$DScore-sigTestData$Asian)
 
@@ -486,7 +432,7 @@ HvTBlack<-tidy(SigModel)
 
 
 sigTestData<-f
-#sigTestData$Latin<-sigTestData$Latin*-1 #im only suppose to do this with pos predictons
+sigTestData$Latin<-sigTestData$Latin*-1 #im only suppose to do this with pos predictons
 sigTestData$LatinPlus<-(sigTestData$DScore+sigTestData$Latin)
 sigTestData$LatinMinus<-(sigTestData$DScore-sigTestData$Latin)
 
@@ -509,7 +455,7 @@ HvTLatin<-tidy(SigModel)
 
 
 sigTestData<-f
-#sigTestData$White<-sigTestData$White*-1 #im only suppose to do this with pos predictons
+sigTestData$White<-sigTestData$White*-1 #im only suppose to do this with pos predictons
 sigTestData$WhitePlus<-(sigTestData$DScore+sigTestData$White)
 sigTestData$WhiteMinus<-(sigTestData$DScore-sigTestData$White)
 
@@ -529,7 +475,7 @@ SigModel<-lm(Prop.H~ExpBias
 HvTWhite<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$EduLevel<-sigTestData$EduLevel*-1 #im only suppose to do this with pos predictons
+sigTestData$EduLevel<-sigTestData$EduLevel*-1 #im only suppose to do this with pos predictons
 sigTestData$EduLevelPlus<-(sigTestData$DScore+sigTestData$EduLevel)
 sigTestData$EduLevelMinus<-(sigTestData$DScore-sigTestData$EduLevel)
 
@@ -609,8 +555,15 @@ SigModel<-lm(Prop.H~ExpBias
 			data=sigTestData, na.action=na.omit)
 HvTRel<-tidy(SigModel)
 
-
-
-
 total<-rbind(HvTExp, HvTAge, HvTSex, HvTAsian, HvTBlack, HvTLatin, HvTWhite, 
 		HvTEdu, HvTInc, HvTPoli, HvTRel)
+
+
+
+
+
+
+
+
+
+test<-Final[!(Final$FIPS %in% unique(MainData$FIP)),] 
