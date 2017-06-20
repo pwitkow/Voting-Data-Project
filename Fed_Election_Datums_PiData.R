@@ -298,8 +298,19 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Religous=Religous*Wieght,
 			 Wieght=Wieght, num_votes=Popular.H.Clinton+Popular.D.Trump,
 			Count=Count)
+ 
 
-corTests<-daters[,c(13,3,15, 14, 18, 17, 4, 10, 11, 5,6,7,8,9,12,16)]
+Age
+Ed.
+Inc.
+%Fe
+%As
+%Bl
+%La
+%Wh
+Pol.
+
+corTests<-daters[,c(13,3, 4,10,11, 5, 6, 7, 8, 9, 12, 16)]
 #corTest needs to be a matrix
 corrs<-rcorr(as.matrix(corTests))$r
 ps<-rcorr(as.matrix(corTests))$P

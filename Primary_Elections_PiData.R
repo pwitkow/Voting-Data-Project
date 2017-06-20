@@ -457,7 +457,7 @@ Bdaters$Caucus<-ifelse((Bdaters$State %in% cauc), 1, 0)
 Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
+			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, 
 			Religous=Religous*Wieght, 
 			 Wieght=Wieght,numDays=numDays, Caucus=Caucus,num_votes=Popular.H.Clinton+Popular.B.Sanders,
 			Count=Count)
@@ -468,7 +468,7 @@ Bcorrs<-rcorr(as.matrix(BcorTests))$r
 Bps<-rcorr(as.matrix(BcorTests))$P
 
 
-BMainModel<-lm(Prop.H~(DScore)
+BMainModel<-lm(Prop.H~(DScore*Caucus)
 			+(ExpBias*Caucus)
 			+Age  #Avg age of county
 			+Sex	# % of females
@@ -569,8 +569,11 @@ summary(CMainModel)
 Cdf<-tidy(CMainModel)
 
 #simple slope for HvB-----------------------------------------------------------------------------
+library(pequod)
 ExpB.slope<-lmres(Prop.H~ExpBias*Caucus, centered=c("ExpBias","Caucus"), data=Bdaters)
 ExpB.slope<-simpleSlope(ExpB.slope, pred="ExpBias", mod1="Caucus")
+PlotSlope(ExpB.slope, namex='Standardized Explicit Gender Stereotypes', 
+		namey='Proportion of Votes for Hillary Clinton', )
 summary.simpleSlope(ExpB.slope)
 
 #Bernie Sanders--------------------------------------------------------------------------
@@ -578,6 +581,7 @@ summary.simpleSlope(ExpB.slope)
 
 
 f<-Bdaters
+f[f$Caucus==0,]<- -1
 f$ExpInt<-f$ExpBias*f$Caucus
 sigTestData<-f
 sigTestData$DScore<-sigTestData$DScore*1 #im only suppose to do this with pos predictons
@@ -595,7 +599,8 @@ SigModel<-lm(Prop.H~DScorePlus
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTDsc<-tidy(SigModel)
 
@@ -615,7 +620,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTAge<-tidy(SigModel)
 
@@ -635,7 +641,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTSex<-tidy(SigModel)
 
@@ -655,7 +662,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTAsian<-tidy(SigModel)
 
@@ -675,7 +683,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTBlack<-tidy(SigModel)
 
@@ -696,7 +705,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTLatin<-tidy(SigModel)
 
@@ -719,7 +729,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevel #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTWhite<-tidy(SigModel)
 
@@ -739,7 +750,8 @@ SigModel<-lm(Prop.H~DScore
 			+EduLevelMinus #Avg Edu level
 			+Income # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTEdu<-tidy(SigModel)
 
@@ -760,7 +772,8 @@ SigModel<-lm(Prop.H~DScore
 			+IncomePlus
 			+IncomeMinus # Avg Income
 			+Poli #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous
+			+numDays, #Avg degree of Explicit women-family
 			data=sigTestData, na.action=na.omit)
 HvTInc<-tidy(SigModel)
 
@@ -780,12 +793,13 @@ SigModel<-lm(Prop.H~DScore
 			+Income # Avg Income
 			+PoliPlus
 			+PoliMinus #Avg political standing
-			+Religous, #Avg degree of Explicit women-family
+			+Religous #Avg degree of Explicit women-family
+			+numDays,
 			data=sigTestData, na.action=na.omit)
 HvTPoli<-tidy(SigModel)
 
 sigTestData<-f
-#sigTestData$Religous<-sigTestData$Religous*-1 #im only suppose to do this with pos predictons
+sigTestData$Religous<-sigTestData$Religous*-1 #im only suppose to do this with pos predictons
 sigTestData$ReligousPlus<-(sigTestData$ExpInt+sigTestData$Religous)
 sigTestData$ReligousMinus<-(sigTestData$ExpInt-sigTestData$Religous)
 
@@ -800,10 +814,32 @@ SigModel<-lm(Prop.H~DScore
 			+Income # Avg Income
 			+Poli #Avg political standing
 			+ReligousPlus
-			+ReligousMinus,
+			+ReligousMinus
+			+numDays,
 			data=sigTestData, na.action=na.omit)
 HvTRel<-tidy(SigModel)
+
+sigTestData<-f
+sigTestData$numDays<-sigTestData$numDays*-1 #im only suppose to do this with pos predictons
+sigTestData$numDaysPlus<-(sigTestData$ExpInt+sigTestData$numDays)
+sigTestData$numDaysMinus<-(sigTestData$ExpInt-sigTestData$numDays)
+
+SigModel<-lm(Prop.H~DScore
+			+Age #Avg age of county
+			+Sex	# % of females
+			+Asian #% of Asians
+			+Black#% African American
+			+Latin #%Latin American	
+			+White #% White American
+			+EduLevel #Avg Edu level
+			+Income # Avg Income
+			+Poli #Avg political standing
+			+Religous
+			+numDaysPlus
+			+numDaysMinus,
+			data=sigTestData, na.action=na.omit)
+HvTNum<-tidy(SigModel)
 total<-rbind(HvTDsc, HvTAge, HvTSex, HvTAsian, HvTBlack, HvTLatin, HvTWhite, 
-		HvTEdu, HvTInc, HvTPoli, HvTRel)
+		HvTEdu, HvTInc, HvTPoli, HvTRel, HvTNum)
 
 

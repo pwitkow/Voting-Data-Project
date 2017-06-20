@@ -53,3 +53,6 @@ ggplot(Bdaters, aes(x=ExpBias, y=Prop.H, color="black",linetype=as.factor(Caucus
     panel.border =element_rect(colour = "black", fill=NA, size=2),
 	panel.background = element_blank())
 	#labs(size='Population Size')
+
+#syntax to save graphs as pdfs
+#pdf('HvB_SimpleSlopes.pdf',width=6,height=4,paper='special') 
