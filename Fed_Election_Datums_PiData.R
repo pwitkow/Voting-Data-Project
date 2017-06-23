@@ -73,6 +73,7 @@ votData$Place<-unlist(lapply(votData$Place,simpleCap))	#UC everything in each
 
 #Convert to Abbvs for codes
 votData$State<-state.abb[match(votData$State, state.name)]	
+votData$State[is.na(votData$State)]<-'DC'
 
 #Clean up some peculiar Crap
 votData$Place<-unlist(lapply(votData$Place,cleanNames))	
@@ -275,7 +276,6 @@ MainData$Wieght<-Final$weight[mM]
 MainData$ExpBias<-Final$ExpBias[mM]
 MainData$Exp.FF<-Final$Exp.FC[mM]
 MainData$Exp.MW<-Final$Exp.MW[mM]
-MainData$Nums<-as.numeric(MainData$Nums)
 
 #Religion
 MainData$Religous<-rel_data$TOTRATEZ[rM]
@@ -283,6 +283,7 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 
 #Remove All Unmatched Counties
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
+
 #Set cutoff and do statistics stuff
 daters<-MainData
 

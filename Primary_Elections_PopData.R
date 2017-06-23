@@ -50,7 +50,8 @@ matchCodes$CountyName<-unlist(lapply(matchCodes$CountyName,cleanNames))
 
 #AK is all one district
 matchCodes[matchCodes$State=='AK',]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
-matchCodes[matchCodes$State=='AK',]$Nums<-matchCodes[matchCodes$State=='AK',]$Nums[1]
+matchCodes[matchCodes$State=='ND',]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+matchCodes[matchCodes$State=='KS',]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
 
 #HAND WRITTEN COUNTY BECAUSE THEY THEIR VOTING DISTRICTS AREN'T THE SAME THING!!
 #Can you belive it?
@@ -106,6 +107,7 @@ votData$Place<-unlist(lapply(votData$Place,simpleCap))	#UC everything in each
 
 #Convert to Abbvs for codes
 votData$State<-state.abb[match(votData$State, state.name)]	
+votData$State[is.na(votData$State)]<-'DC'
 
 #Clean up some peculiar Crap
 votData$Place<-unlist(lapply(votData$Place,cleanNames))	
@@ -121,17 +123,16 @@ votData$Nums<-matchCodes$Nums[vM]
 
 #AK is all one district
 votData[votData$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
-votData[votData$State=="AK",]$Nums<-matchCodes[matchCodes$State=='AK',]$Nums[1]
+votData[votData$State=="ND",]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+votData[votData$State=="KS",]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
+votData[votData$State=="KS",]$Place<-'State'
 
-#collapse Main to the state lvl so its commensurate with Repubs
-maine_data<-votData[votData$State=="ME",]
-maine_data$Nums<-as.numeric(maine_data$Nums)
-maine_data<-ddply(maine_data, c("Candidate", "State", "Party"), summarise,
-		Votes=mean(Votes, na.rm=T), Popular=mean(Popular, na.rm=T), FIPS=FIPS[1],
-		X=X[1], Place=Place[1], Nums=Nums[1])
-
-votData<-votData[!(votData$State=="ME"),]
-votData<-rbind(votData, maine_data)
+#aggregate KS to state level
+KS<-votData[votData$State=="KS",]
+votData<-votData[!(votData$State=="KS"),]
+KS<-ddply(KS, c('Candidate','State','Place','Party','FIPS','Nums'), summarise, Votes=mean(Votes), 
+			Popular=mean(Popular), X=mean(X))
+votData<-rbind(votData, KS)
 
 #IAT Data________________________________________________________________________________________________________________
 iatData<-read.csv("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Project Implicit Data\\Gender-Career IAT.public.2005-2015.csv", head=T)
@@ -159,7 +160,8 @@ iatDataframe$FIPS<-
 
 #Make all alsaka respondents from the same voting district
 iatDataframe[iatDataframe$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
-
+iatDataframe[iatDataframe$State=="ND",]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
+iatDataframe[iatDataframe$State=="KS",]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
 
 #Reform minnosota because its coutnies != voting districts
 #In this authors opinion, it should be declared a wildlife
@@ -291,21 +293,19 @@ quad_data$FIPS<-as.character(quad_data$FIPS)
 #Doing Stuff__________________________________________________________________________________________________________					
 #Main Model data shaping and analysis
 
-#this is the data for hillary versus bernie
-#MainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders',-c(1)]
-
 #Data for hillary versus trump, with adjustments for the fact that 
 #some republican counties did not report the outcomes for primary 
 #votes
 MainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='D.Trump',-c(1)]
-#HillData<-votData[votData$Candidate=='H.Clinton',-c(1)] 
+HillData<-votData[votData$Candidate=='H.Clinton',-c(1)] 
 TrumData<-votData[votData$Candidate=='D.Trump',-c(1)]$FIPS
 MainData<-MainData[MainData$FIPS %in% TrumData,-c(1,6)]
 
 
 #Reshape to long
+MainData<-MainData[ , -which(names(MainData) %in% c("Nums"))]
 MainData<-w <- reshape(MainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 MainData$Prop.H<-MainData$Popular.H.Clinton/(MainData$Popular.H.Clinton+MainData$Popular.D.Trump)
 
 #Attach County IAT-Data
@@ -343,14 +343,10 @@ MainData$Religous<-rel_data$TOTRATEZ[rM]
 #primary dates
 MainData$numDays<-days$avgNumDays[mDS]
 
-#quad Modeled components
-MainData$ACFF<-quad_data$ACFF[qM]
-MainData$ACMC<-quad_data$ACMC[qM]
-
 #Remove All Unmatched Counties (no response counties)
 MainData<-MainData[!(is.na(MainData$CheckFIPS)),]
 #Set cutoffs in data for model
-daters<-MainData   #[MainData$Count>=20,]
+daters<-MainData 
 
 #get rid of NA rows 
 daters<-daters[!(rowSums(is.na(daters)) > 0),]
@@ -362,7 +358,7 @@ daters<-daters[!(rowSums(is.na(daters)) > 0),]
 daters<-ddply(daters, c("FIPS", "Prop.H"), summarise,Dscore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght, Religous=Religous*Wieght,  ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Poli=Poli*Wieght, Religous=Religous*Wieght,
 			ExpBias=ExpBias*Wieght, numDays=numDays,
 			 Wieght=Wieght)
 
@@ -396,8 +392,9 @@ dim(daters)
 BMainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders',-c(1)]
 
 #Reshape to long
+BMainData<-BMainData[ , -which(names(BMainData) %in% c("Nums"))]
 BMainData<-w <- reshape(BMainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 BMainData$Prop.H<-BMainData$Popular.H.Clinton/(BMainData$Popular.H.Clinton+BMainData$Popular.B.Sanders)
 
 #find the matching parts
@@ -434,15 +431,10 @@ BMainData$Religous<-rel_data$TOTRATE[BrM]
 #primary dates
 BMainData$numDays<-days$DemNumDays[bDS]
 
-#quad Modeled components
-BMainData$ACFF<-quad_data$ACFF[BqM]
-BMainData$ACMC<-quad_data$ACMC[BqM]
-
-
 #Remove All Unmatched Counties
 
 BMainData<-BMainData[!(is.na(BMainData$CheckFIPS)),]
-Bdaters<-BMainData     #[BMainData$Count>=20,]
+Bdaters<-BMainData     
 
 #get rid of NA rows 
 Bdaters<-Bdaters[!(rowSums(is.na(Bdaters)) > 0),]
@@ -453,15 +445,15 @@ caucus<-c('AK', 'CO', 'HI', 'ID', 'KS', 'ME', 'MI', 'NE', 'NV', 'ND', 'UT', 'WA'
 Bdaters$Caucus<-ifelse(Bdaters$State %in% caucus, 1, 0)
 
 #is there a faster way to do this using matrix multiplication?
-Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise,Dscore=DScore*Wieght, Age=Age*Wieght,  
+Bdaters<-ddply(Bdaters, c("FIPS", "Prop.H"), summarise,DScore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght, Religous=Religous*Wieght,  ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Poli=Poli*Wieght, Religous=Religous*Wieght,
 			ExpBias=ExpBias*Wieght, numDays=numDays, Caucus=Caucus,
 			 Wieght=Wieght)
 
-BMainModel<-lm(Prop.H~Dscore
-			+ExpBias
+BMainModel<-lm(Prop.H~(DScore*Caucus)
+			+(ExpBias*Caucus)
 			+Age  #Avg age of county
 			+Sex	# % of females
 			+Asian #% of Asians
@@ -471,10 +463,10 @@ BMainModel<-lm(Prop.H~Dscore
 			+EduLevel #Avg Edu level 
 			+Income # Avg Income
 			+Poli	#Avg political standing
-			+Caucus
-			+Religous
+			+Religous#
+			#+Caucus
 			+numDays,
-			data=Bdaters, na.action=na.omit)
+			data=Bdaters, na.action=na.omit) 
 summary(BMainModel, correlation=F)
 
 Bdf<-tidy(BMainModel)
@@ -489,8 +481,9 @@ CruzData<-votData[votData$Candidate=='T.Cruz',-c(1)]$FIPS
 CMainData<-CMainData[CMainData$FIPS %in% CruzData,-c(1,6)]
 
 #Reshape to long
+CMainData<-CMainData[ , -which(names(CMainData) %in% c("Nums"))]
 CMainData<-w <- reshape(CMainData, timevar = "Candidate",
-  idvar = c("State", "Place", "FIPS", "Nums"),direction = "wide")
+  idvar = c("State", "Place", "FIPS"),direction = "wide")
 CMainData$Prop.H<-CMainData$Popular.H.Clinton/(CMainData$Popular.H.Clinton+CMainData$Popular.T.Cruz)
 
 #Attach County IAT-Data
@@ -529,26 +522,22 @@ CMainData$Religous<-rel_data$TOTRATEZ[CrM]
 #election data
 CMainData$numDays<-days$avgNumDays[cDS]
 
-#quad Modeled components
-CMainData$ACFF<-quad_data$ACFF[CqM]
-CMainData$ACMC<-quad_data$ACMC[CqM]
-
 #Remove All Unmatched Counties
 
 CMainData<-CMainData[!(is.na(CMainData$CheckFIPS)),]
 #Set cutoffs in data for model
-Cdaters<-CMainData     #[CMainData$Count>=20,]
+Cdaters<-CMainData     
 
 #get rid of NA rows 
 Cdaters<-Cdaters[!(rowSums(is.na(Cdaters)) > 0),]
 
-#Cdaters<-Cdaters[Cdaters$numDays<90,]
+Cdaters<-Cdaters[Cdaters$numDays<90,]
 
 #is there a faster way to do this using matrix multiplication?
 Cdaters<-ddply(Cdaters, c("FIPS", "Prop.H"), summarise,Dscore=DScore*Wieght, Age=Age*Wieght,  
 			Sex=Sex*Wieght, Asian=Asian*Wieght, Black=Black*Wieght, Latin=Latin*Wieght, 
 			White=White*Wieght, EduLevel=EduLevel*Wieght, Income=Income*Wieght,
-			Poli=Poli*Wieght, Religous=Religous*Wieght,  ACFF=ACFF*Wieght, ACMC=ACMC*Wieght,
+			Poli=Poli*Wieght, Religous=Religous*Wieght,
 			ExpBias=ExpBias*Wieght, numDays=numDays,
 			 Wieght=Wieght)
 
@@ -572,5 +561,10 @@ Cdf<-tidy(CMainModel)
 
 
 
-
-e
+#Simple Slopes 
+library(pequod)
+ExpB.slope<-lmres(Prop.H~DScore*Caucus, centered=c("DScore","Caucus"), data=Bdaters)
+ExpB.slope<-simpleSlope(ExpB.slope, pred="DScore", mod1="Caucus")
+PlotSlope(ExpB.slope, namex='Standardized Explicit Gender Stereotypes', 
+		namey='Proportion of Votes for Hillary Clinton', )
+summary.simpleSlope(ExpB.slope)

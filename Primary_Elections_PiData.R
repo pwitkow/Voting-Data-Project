@@ -108,6 +108,7 @@ votData$Place<-unlist(lapply(votData$Place,simpleCap))	#UC everything in each
 
 #Convert to Abbvs for codes
 votData$State<-state.abb[match(votData$State, state.name)]	
+votData$State[is.na(votData$State)]<-'DC'
 
 #Clean up some peculiar Crap
 votData$Place<-unlist(lapply(votData$Place,cleanNames))	
@@ -126,7 +127,14 @@ votData[votData$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
 
 votData[votData$State=="ND",]$FIPS<-matchCodes[matchCodes$State=='ND',]$FIPS[1]
 votData[votData$State=="KS",]$FIPS<-matchCodes[matchCodes$State=='KS',]$FIPS[1]
+votData[votData$State=="KS",]$Place<-'State'
 
+#aggregate KS to state level
+KS<-votData[votData$State=="KS",]
+votData<-votData[!(votData$State=="KS"),]
+KS<-ddply(KS, c('Candidate','State','Place','Party','FIPS','Nums'), summarise, Votes=mean(Votes), 
+			Popular=mean(Popular), X=mean(X))
+votData<-rbind(votData, KS)
 
 #IAT Data________________________________________________________________________________________________________________
 
@@ -302,9 +310,6 @@ quad_data$FIPS<-as.character(quad_data$FIPS)
 #Doing Stuff__________________________________________________________________________________________________________					
 #Main Model data shaping and analysis
 
-#this is the data for hillary versus bernie
-#MainData<-votData[votData$Candidate=='H.Clinton' |votData$Candidate=='B.Sanders',-c(1)]
-
 #Data for hillary versus trump, with adjustments for the fact that 
 #some republican counties did not report the outcomes for primary 
 #votes
@@ -371,12 +376,6 @@ daters<-ddply(daters, c("FIPS", "Prop.H"), summarise, DScore=DScore*Wieght, Age=
 			Poli=Poli*Wieght, ExpBias=ExpBias*Wieght, Exp.FF=Exp.FF, Exp.MW=Exp.MW, 
 			Religous=Religous*Wieght,
 			 Wieght=Wieght, numDays=numDays)
-
-corTests<-daters[,c(13,3,15, 14, 18, 17, 4, 10, 11, 5,6,7,8,9,12,16,20)]
-#corTest needs to be a matrix
-corrs<-rcorr(as.matrix(corTests))$r
-ps<-rcorr(as.matrix(corTests))$P
-
 
 #setwd for export 
 setwd('C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\CombinedBias')
@@ -578,8 +577,6 @@ summary.simpleSlope(ExpB.slope)
 
 #Bernie Sanders--------------------------------------------------------------------------
 #  Not touched yet. Gotta do the plus minus analyses    
-
-
 f<-Bdaters
 f[f$Caucus==0,]<- -1
 f$ExpInt<-f$ExpBias*f$Caucus
