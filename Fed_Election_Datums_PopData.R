@@ -1,5 +1,5 @@
 setwd("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Data Files\\Fed_Election_Data")
-#put whatever libraries here
+#load libraries
 library('plyr')
 library('nlme')
 library('ggplot2')
@@ -50,8 +50,7 @@ matchCodes$CountyName<-unlist(lapply(matchCodes$CountyName,cleanNames))
 matchCodes[matchCodes$State=='AK',]$FIPS<-matchCodes[matchCodes$State=='AK',]$FIPS[1]
 matchCodes[matchCodes$State=='AK',]$Nums<-matchCodes[matchCodes$State=='AK',]$Nums[1]
 
-#HAND WRITTEN COUNTY BECAUSE THEY THEIR VOTING DISTRICTS AREN'T THE SAME THING!!
-#Can you belive it?
+#HAND WRITTEN COUNTY BECAUSE THEY THEIR VOTING DISTRICTS AREN'T THE SAME THING
 disOne<-c('Rock', "Nobles",'Jackson', 'Martin','Faribault', 'Freeborn','Mower','Fillmore', 'Houston',
 	    'Winona','Olmsted','Dodge', 'Steele', 'Waseca', 'Blue Earth', 'Watonwan', 'Brown','Nicollet',
 	    'Le Sueur', 'Rice')
@@ -105,7 +104,7 @@ votData$Place<-unlist(lapply(votData$Place,simpleCap))	#UC everything in each
 #Convert to Abbvs for codes
 votData$State<-state.abb[match(votData$State, state.name)]	
 
-#Clean up some peculiar Crap
+
 votData$Place<-unlist(lapply(votData$Place,cleanNames))	
 votData[votData$State=='VA' & votData$Place=='James City',]$Place<-"James City County"
 votData[votData$State=='VA' & votData$Place=='Charles City',]$Place<-"Charles City County"
