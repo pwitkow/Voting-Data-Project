@@ -1,5 +1,5 @@
 setwd("C:\\Users\\Phillip\\Google Drive\\Where Bais Against Females Berns You - A Study of Implicit Bias and Voting Data\\Data Files\\Fed_Election_Data")
-#put whatever libraries here
+#load libraries here
 library('plyr')
 library('nlme')
 library('ggplot2')
@@ -90,8 +90,7 @@ vData<-list.files(pattern='.csv')
 vData<-lapply(vData, read.csv, head=T, stringsAsFactors=F)
 votData<-do.call(rbind, vData)
 
-#organize a bunch of stuff, like getting rid of commas in numbers, dashes, making captial letters
-#are standardized all all that stuff
+#standardize variables by getting rid of commas in numbers, dashes, making captial letters
 
 votData$Popular<-as.integer(votData$Popular)
 votData$State=gsub('-'," ", votData$State, fixed=T) #Take Dashes out of names
@@ -105,7 +104,7 @@ votData$Place<-unlist(lapply(votData$Place,simpleCap))	#UC everything in each
 #Convert to Abbvs for codes
 votData$State<-state.abb[match(votData$State, state.name)]	
 
-#Clean up some peculiar Crap
+
 votData$Place<-unlist(lapply(votData$Place,cleanNames))	
 votData[votData$State=='VA' & votData$Place=='James City',]$Place<-"James City County"
 votData[votData$State=='VA' & votData$Place=='Charles City',]$Place<-"Charles City County"
@@ -152,8 +151,6 @@ iatDataframe[iatDataframe$State=="AK",]$FIPS<-matchCodes[matchCodes$State=='AK',
 
 
 #Reform minnosota because its coutnies != voting districts
-#In this authors opinion, it should be declared a wildlife
-#sancutary for gerry-manders!
 
 	#get all the fips that need to be replace
 mNFips1<-matchCodes[matchCodes$State=='MN' & matchCodes$CountyName=='1st District',]$FIPS
